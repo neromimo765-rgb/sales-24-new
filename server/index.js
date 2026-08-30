@@ -1,10 +1,11 @@
-// ملف التشغيل الرئيسي - Sales 24
+// ملف التشغيل الرئيسي - Sales 24 (المتكامل مع محرك التسويق الذكي)
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// استدعاء محرك السكريبتات الخارجي باحترافية
+// استدعاء محركات النظام الخارجية باحترافية
 const scriptGenerator = require('./scriptGenerator');
+const marketingEngine = require('./marketingEngine');
 
 const app = express();
 
@@ -12,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// الصفحة الرئيسية - واجهة التحكم المدمجة مع مولد السكريبتات
+// الصفحة الرئيسية - واجهة التحكم المتقدمة
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -30,7 +31,7 @@ app.get('/', (req, res) => {
           margin: 0;
         }
         .container {
-          max-width: 600px;
+          max-width: 650px;
           margin: 30px auto;
           background: rgba(255,255,255,0.95);
           border-radius: 20px;
@@ -50,7 +51,7 @@ app.get('/', (req, res) => {
         }
         .form-group { margin-bottom: 12px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; }
-        input {
+        input, select {
           width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
@@ -88,36 +89,50 @@ app.get('/', (req, res) => {
     <body>
       <div class="container">
         <h1>🚀 Sales 24</h1>
-        <p style="text-align:center; color:#666;">منصة إدارة التسويق والذكاء الاصطناعي</p>
+        <p style="text-align:center; color:#666;">منصة إدارة التسويق والذكاء الاصطناعي الشامل</p>
         
         <div class="status">✅ النظام يعمل بكفاءة أونلاين 24 ساعة</div>
         
         <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
         
-        <h3>🤖 مولد السكريبتات التسويقية الذكي:</h3>
+        <h3>🧠 محرك التسويق الشامل وتحليل المنتجات:</h3>
         <div class="form-group">
           <label>اسم المنتج:</label>
-          <input type="text" id="productName" placeholder="مثال: منظف عام قوي / جهاز تسخين..." />
+          <input type="text" id="productName" placeholder="مثال: منظف الأصدقاء العام / جهاز تكنولوجي..." />
         </div>
         <div class="form-group">
-          <label>السعر:</label>
-          <input type="text" id="productPrice" placeholder="مثال: 150 جنيه / 30 ريال" />
+          <label>فئة المنتج:</label>
+          <select id="productCategory">
+            <option value="default">عام (Default)</option>
+            <option value="electronics">إلكترونيات وأجهزة</option>
+            <option value="beauty">تجميل وعناية شخصية</option>
+            <option value="home">أدوات منزلية ومنظفات</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>الجمهور المستهدف:</label>
-          <input type="text" id="targetAudience" placeholder="مثال: ربات البيوت / المهتمين بالسيارات" />
+          <label>تقييم الإضاءة للفيديو (من 0 لـ 10):</label>
+          <input type="number" id="lightingScore" value="8" min="0" max="10" />
+        </div>
+        <div class="form-group">
+          <label>دقة الفيديو/الصورة:</label>
+          <select id="resolution">
+            <option value="1080p">1080p (FHD - ممتاز)</option>
+            <option value="720p">720p (HD - جيد)</option>
+            <option value="480p">480p (ضعيف)</option>
+          </select>
         </div>
         
-        <button class="btn" onclick="generateScript()">توليد السكريبت والإعلان فوراً 🎬</button>
+        <button class="btn" onclick="runComprehensiveMarketing()">تشغيل التحليل الشامل وخطة الإعلان 🎯</button>
         
         <div id="resultBox" class="result"></div>
       </div>
 
       <script>
-        async function generateScript() {
+        async function runComprehensiveMarketing() {
           const productName = document.getElementById('productName').value;
-          const price = document.getElementById('productPrice').value;
-          const targetAudience = document.getElementById('targetAudience').value;
+          const category = document.getElementById('productCategory').value;
+          const lightingScore = document.getElementById('lightingScore').value;
+          const resolution = document.getElementById('resolution').value;
           const box = document.getElementById('resultBox');
           
           if(!productName) {
@@ -126,23 +141,34 @@ app.get('/', (req, res) => {
           }
           
           box.style.display = 'block';
-          box.innerHTML = '⏳ جاري توليد المحتوى التسويقي عبر السيرفر...';
+          box.innerHTML = '⏳ جاري تشغيل التحليل الذكي وفحص الوسائط عبر السيرفر...';
           
           try {
-            const res = await fetch('/api/generate-script', {
+            const res = await fetch('/api/comprehensive-marketing', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productName, price, targetAudience })
+              body: JSON.stringify({ productName, category, lightingScore, resolution })
             });
             const responseData = await res.json();
             
             if(responseData.success) {
-              const d = responseData.data;
-              box.innerHTML = '✨ **السكريبت الإعلاني الجاهز:**\\n\\n' + 
-                              '🔹 **الخطاف (Hook):** ' + d.hook + '\\n\\n' + 
-                              '🔸 **التفاصيل:** ' + d.body + '\\n\\n' + 
-                              '🎯 **دعوة الشراء (CTA):** ' + d.cta + '\\n\\n' + 
-                              '🏷️ **الهاشتاجات:** ' + d.hashtags;
+              const p = responseData.data.marketingPlan;
+              const m = responseData.data.mediaCheck;
+              
+              box.innerHTML = '✨ **التقرير التسويقي والشامل:**\\n\\n' + 
+                              '📦 **المنتج:** ' + p.product + '\\n' + 
+                              '📊 **حالة التحليل:** ' + p.status + '\\n\\n' + 
+                              '🔍 **ملخص دراسة السوق:**\\n' + p.marketResearch.searchSummary + '\\n' + 
+                              '👥 **الجمهور المستهدف:** ' + p.marketResearch.targetAudience + '\\n\\n' + 
+                              '🎬 **أفضل أشكال الإعلانات:**\\n' + 
+                              '1️⃣ ' + p.adFormats[0].type + ' (' + p.adFormats[0].concept + ')\\n' + 
+                              '2️⃣ ' + p.adFormats[1].type + ' (' + p.adFormats[1].concept + ')\\n\\n' + 
+                              '📝 **السكريبت الإعلاني المقترح:**\\n' + p.contentPackage.script + '\\n\\n' + 
+                              '🎵 **الموسيقى المقترحة:** ' + p.contentPackage.suggestedMusic + '\\n\\n' + 
+                              '📱 **تقييم جودة الوسائط (الفيديو/الصورة):**\\n' + 
+                              '• الحالة: ' + m.qualityStatus + '\\n' + 
+                              '• التوصيات: ' + m.recommendations.join(' | ') + '\\n\\n' + 
+                              '🏷️ **الهاشتاجات:** ' + p.contentPackage.hashtags;
             } else {
               box.innerHTML = '❌ خطأ: ' + responseData.message;
             }
@@ -156,13 +182,38 @@ app.get('/', (req, res) => {
   `);
 });
 
-// مسار API لتوليد السكريبتات (ينادي على ملف scriptGenerator.js الخارجي)
+// مسار API التحليل الشامل التسويقي وفحص الوسائط
+app.post('/api/comprehensive-marketing', (req, res) => {
+  try {
+    const { productName, category, lightingScore, resolution } = req.body;
+    
+    if (!productName) {
+      return res.status(400).json({ success: false, message: 'اسم المنتج مطلوب' });
+    }
+
+    // استدعاء الدوال من الملف الخارجي marketingEngine.js
+    const marketingPlan = marketingEngine.analyzeProductAndPlan(productName, category);
+    const mediaCheck = marketingEngine.evaluateMediaQuality('فيديو', resolution || '1080p', lightingScore || 8);
+
+    res.json({
+      success: true,
+      data: {
+        marketingPlan,
+        mediaCheck
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'حدث خطأ داخلي' });
+  }
+});
+
+// مسار API القديم لتوليد السكريبتات
 app.post('/api/generate-script', (req, res) => {
   try {
     const result = scriptGenerator.generate(req.body);
     res.json({ success: true, data: result });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'حدث خطأ داخلي أثناء توليد المحتوى' });
+    res.status(500).json({ success: false, message: 'حدث خطأ داخلي' });
   }
 });
 
