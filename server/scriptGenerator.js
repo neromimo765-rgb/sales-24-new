@@ -7,9 +7,20 @@
  * بقية المعمارية (التحقق، الأمان، التقييم) تبقى كما هي.
  */
 
-const { cleanText, toHashtagSlug } = require('../utils/sanitizer');
+// ---------- دوال معالجة ونصوص محلية (بدون اعتماد خارجي) ----------
 
-// مكتبات محتوى متنوعة لعمل توليد فعلي غير متكرر
+function cleanText(text, maxLen = 60) {
+  if (!text) return '';
+  return String(text).trim().slice(0, maxLen);
+}
+
+function toHashtagSlug(text) {
+  if (!text) return 'منتج';
+  return String(text).trim().replace(/\s+/g, '_').replace(/[^\w\u0600-\u06FF]+/g, '');
+}
+
+// ---------- مكتبات محتوى متنوعة لعمل توليد فعلي غير متكرر ----------
+
 const HOOKS = [
   (p) => `لحظة واحدة! لو بتدور على حل نهائي ومجرب لـ «${p}»، فالفيديو ده ليك انت بالذات!`,
   (p) => `استنى شوية! الناس بتلف وتدور ومش بتلاقي الحل الصح — بس إنت لسه في المكان الصح لـ «${p}».`,
