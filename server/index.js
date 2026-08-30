@@ -1,5 +1,5 @@
 // ملف التشغيل الرئيسي
-const express = require('express');
+const express = require('cors') ? require('express') : require('express');
 const cors = require('cors');
 const path = require('path');
 
@@ -9,17 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// الصفحة الرئيسية
+// الصفحة الرئيسية - تعرض صفحة التحكم الجميلة مباشرة
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Sales 24 API يعمل بشكل ممتاز من تطبيق Termux!',
-    time: new Date()
-  });
-});
-
-// صفحة التحكم
-app.get('/dashboard', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -42,6 +33,7 @@ app.get('/dashboard', (req, res) => {
           border-radius: 20px;
           padding: 30px;
           box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          color: #333;
         }
         h1 { color: #667eea; text-align: center; }
         .status {
@@ -94,7 +86,7 @@ app.get('/dashboard', (req, res) => {
         
         <div class="feature">
           <span class="feature-icon">📱</span>
-          <span class="feature-text">متصل من جهاز أندرويد</span>
+          <span class="feature-text">متصل من سحابة Railway</span>
         </div>
         <div class="feature">
           <span class="feature-icon">🔗</span>
@@ -117,7 +109,7 @@ app.get('/dashboard', (req, res) => {
         <a href="/api/status" class="btn">📈 حالة النظام</a>
         
         <p style="text-align:center; color:#999; font-size:12px; margin-top:20px;">
-          تم التشغيل من هاتف الأندرويد - Termux
+          تم التشغيل أونلاين عبر Railway بنجاح
         </p>
       </div>
     </body>
@@ -129,14 +121,14 @@ app.get('/dashboard', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({
     success: true,
-    message: 'الف API يعمل بشكل ممتاز!',
+    message: 'API يعمل بشكل ممتاز!',
     endpoints: [
       '/api/auth - تسجيل الدخول',
       '/api/products - المنتجات',
       '/api/analytics - التحليلات',
       '/api/publish - النشر'
     ],
-    platform: 'أندرويد',
+    platform: 'أندرويد / Railway',
     time: new Date()
   });
 });
@@ -155,7 +147,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // بدء الخادم
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Sales 24 يعمل على: http://localhost:${PORT}`);
   console.log('📊 يمكنك الوصول من الهاتف الأن');
