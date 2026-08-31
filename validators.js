@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية المحدثة)
+// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية النهائية)
 // =====================================================================
 const { body, validationResult } = require('express-validator');
 
@@ -44,7 +44,8 @@ const marketingValidationRules = [
 
   body('category')
     .optional()
-    .isIn(['default', 'electronics', 'beauty', 'home', 'fashion', 'food', 'fitness'])
+    .trim()
+    .isIn(['default', 'electronics', 'beauty', 'home', 'fashion', 'food', 'fitness', 'general'])
     .withMessage('فئة المنتج غير صالحة'),
 
   body('lightingScore')
@@ -60,8 +61,9 @@ const marketingValidationRules = [
 
   body('market')
     .optional()
-    .isIn(['egypt', 'saudi'])
-    .withMessage('السوق يجب أن يكون مصر أو السعودية'),
+    .trim()
+    .isIn(['egypt', 'saudi', 'uae', 'gulf'])
+    .withMessage('السوق المستهدف غير صالح'),
 
   body('dialect')
     .optional()
@@ -78,10 +80,11 @@ const marketingValidationRules = [
     .isNumeric().withMessage('التكلفة يجب أن تكون رقماً')
     .toFloat(),
 
+  // ⚠️ تم إزالة escape() هنا حصراً لتجنب إفساد الروابط الحقيقية (URLs)
   body('uploadedFileUrl')
     .optional()
     .trim()
-    .escape()
+    .isURL().withMessage('رابط الملف المرفوع غير صالح')
 ];
 
 // ✍️ قواعد التحقق لتوليد السكريبت
