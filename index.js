@@ -1,5 +1,5 @@
 // =====================================================================
-// 🚀 Sales 24 Pro - النسخة النووية النهائية المطورة (تريليون في المية)
+// 🚀 Sales 24 Pro - النسخة النووية النهائية المتكاملة (تريليون في المية)
 // =====================================================================
 require('dotenv').config();
 const express = require('express');
@@ -15,14 +15,15 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 
-// الاستدعاءات الأساسية
+// الاستدعاءات الأساسية مع إصلاح خطأ استيراد connectDB
 const logger = require('./logger');
-const connectDB = require('./database');
+const { connectDB } = require('./database'); // 🛠️ إصلاح خطأ TypeError: connectDB is not a function
 const scriptGenerator = require('./scriptGenerator');
 const marketingEngine = require('./marketingEngine');
 const { calculateProfit } = require('./profitCalculator');
-const { upload, handleUploadErrors } = require('./uploadConfig'); // تم التحديث ليتطابق مع النسخة الآمنة لـ upload
+const { upload, handleUploadErrors } = require('./uploadConfig');
 const Campaign = require('./models/Campaign');
+const User = require('./models/User'); // 👤 استدعاء نموذج المستخدم للربط الكامل
 
 // Middlewares الأساسية والحماية
 const { 
@@ -162,7 +163,6 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
     let campaignId = null;
     
     try {
-      // افتراض مستخدم افتراضي أو جلب المستخدم من الـ Request لو الـ auth مفعّل
       const userId = req.user ? req.user._id : null;
       
       const campaignData = {
@@ -183,7 +183,6 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
 
       if (userId) campaignData.userId = userId;
 
-      // الحفظ إذا توفر موديل صالح أو تم ربطه بالمستخدم
       const newCampaign = new Campaign(campaignData);
       const saved = await newCampaign.save();
       savedToDB = true;
@@ -258,7 +257,6 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (error) => {
   logger.error('❌ استثناء غير مصطاد (Uncaught Exception):', error);
   console.error('❌ استثناء خطير:', error);
-  // إغلاق آمن للسيرفر في حال الاستثناءات الحرجة
   server.close(() => {
     process.exit(1);
   });
@@ -544,4 +542,3 @@ function getCampaignsHTML() {
 
 function getAnalyticsHTML() {
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>الإحصائيات</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;padding:20px;font-family:system-ui}h1{color:#38bdf8;text-align:center}.back{text-align:center;margin-top:20px}.back a{color:#38bdf8}</style></head><body><h1>📊 الإحصائيات</h1><div style="text-align:center;margin-top:30px;"><p>لوحة التحليلات المتقدمة تعمل بكفاءة تريليونية 🚀</p></div><div class="back"><a href="/">← الرئيسية</a></div></body></html>`;
-}
