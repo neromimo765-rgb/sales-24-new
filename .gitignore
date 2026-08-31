@@ -1,11 +1,13 @@
 # =====================================================================
-# 🚀 Sales 24 Pro - Git Ignore Configuration
+# 🚀 Sales 24 Pro - Git Ignore Configuration (النسخة النووية النهائية)
 # =====================================================================
 
 # 📦 Dependencies (الحزم والتبعيات)
 node_modules/
 jspm_packages/
 web_modules/
+.pnp
+.pnp.js
 
 # 🔑 Environment & Secrets (الملفات السرية والمتغيرات)
 .env
@@ -13,8 +15,10 @@ web_modules/
 .env.development
 .env.test
 .env.production
+.env.docker
 *.pem
 *.key
+*.cert
 
 # 📝 Logs & Debugging (السجلات وأخطاء التشغيل)
 *.log
@@ -22,15 +26,18 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
 
-# 📁 User Uploads & Temp Files (ملفات الميديا والمرفوعات)
+# 📁 User Uploads & Temp Files (ملفات الميديا والمرفوعات والمجلدات المؤقتة)
 uploads/*
 !uploads/.gitkeep
 public/uploads/*
 !public/uploads/.gitkeep
 temp/
 tmp/
+*.tmp
+*.temp
 
 # 💻 OS & System Files (ملفات النظام والتشغيل)
 .DS_Store
@@ -40,6 +47,7 @@ tmp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
 
 # 🛠️ IDE & Editors (ملفات بيئات التطوير)
 .vscode/*
@@ -53,11 +61,22 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+*.user
 
 # 🧪 Testing & Coverage (تقارير الاختبارات)
 coverage/
 .nyc_output/
+.jest/
 
-# 🏗️ Production Build Output (ملفات البناء والتجميع)
+# 🏗️ Production Build Output & Caching (ملفات البناء والتجميع والذاكرة المؤقتة)
 dist/
 build/
+.cache/
+.parcel-cache/
+.turbo/
+*.tsbuildinfo
+
+# 🌐 Deployment & Serverless Platforms (ملفات منصات النشر السحابي)
+.vercel/
+.netlify/
+.serverless/
