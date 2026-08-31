@@ -1,6 +1,8 @@
 /**
- * محرك توليد السكريبتات التسويقية - النسخة النووية المطورة 🚀
+ * =====================================================================
+ * ✍️ scriptGenerator.js - محرك توليد السكريبتات التسويقية (النسخة النووية النهائية)
  * تفعيل الذاكرة المؤقتة الذكية (In-Memory Caching) وتوسيع محركات الإبداع.
+ * =====================================================================
  */
 
 // ذاكرة مؤقتة فائقة السرعة لمنع تكرار المعالجة لنفس المنتجات (Cache Rocket)
@@ -9,7 +11,7 @@ const MAX_CACHE_SIZE = 500; // حماية الذاكرة من الامتلاء
 
 // ---------- دوال معالجة ونصوص محلية مسرعة ----------
 
-function cleanText(text, maxLen = 60) {
+function cleanText(text, maxLen = 100) {
   if (!text) return '';
   return String(text).trim().slice(0, maxLen);
 }
@@ -22,12 +24,12 @@ function toHashtagSlug(text) {
 // ---------- مكتبات محتوى نووية وموسعة لضمان إبداع لا ينتهي ----------
 
 const HOOKS = [
-  (p) => `🔥 لحظة واحدة! لو بتدور على حل نهائي ومجرب 100% لـ «${p}», فالفيديو ده ليك إنت بالذات!`,
+  (p, market) => market === 'saudi' ? `🔥 يا هلا! لو دورْت على حل نهائي ومضمون 100% لـ «${p}», فهذا الإعلان خصيصاً عشانك!` : `🔥 لحظة واحدة! لو بتدور على حل نهائي ومجرب 100% لـ «${p}», فالفيديو ده ليك إنت بالذات!`,
   (p) => `⚡ استنى شوية! ناس كتير بتلف وتدور ومش بتلاقي النتيجة الصح — بس إنت لقيتها هنا في «${p}».`,
   (p) => `🚀 هسيبك مع اللي بيبيعك كلام فارغ، وأنا هديك الصافي: «${p}» اللي هيدمر المنافسة!`,
   (p) => `⏱️ دقيقة واحدة بس من وقتك — وبعدها هتفهم ليه «${p}» هو أحسن استثمار هتعمله في حياتك النهارده.`,
   (p) => `💎 الفرق بين اللي بيفشل واللي بينجح؟ واحد بيختار «${p}» الصحيح… وإنت خلاص اخترت!`,
-  (p) => `🎯 أقوى عرض وصل مصر النهاردة لـ «${p}».. لو فوتّ الفيديو ده يبقى فوتّ نص عمرك!`
+  (p, market) => market === 'saudi' ? `🎯 أقوى عرض وصل السعودية اليوم لـ «${p}».. لا تفوّت الفرصة!` : `🎯 أقوى عرض وصل مصر النهاردة لـ «${p}».. لو فوتّ الفيديو ده يبقى فوتّ نص عمرك!`
 ];
 
 const BODIES = [
@@ -39,29 +41,31 @@ const BODIES = [
 
 const CTAS = [
   (p) => `💥 اطلب دلوقتي قبل نفاد الكمية، وابعتلنا رسالة بكلمة «${p}» عشان نحجز نسختك فوراً وبشحن مجاني أو مخفض!`,
-  (p) => `🔥 عرض اليوم النووي محدود جداً — كلمنا حالا في رسالة وخد «${p}» قبل ما السعر يرجع للأصلي!`,
+  (p) => `🔥 عرض اليوم النووي محدود جداً — كلمنا حالا في رسالة وخد «${p}» قبل ما السعر يرجع للأصلي!`,
   (p) => `🎯 اضغط ابعتلنا رسالة دلوقتي واطلب «${p}»، ومتترددش لأن الكميات تخلص بسرعة البرق!`,
   (p) => `🚀 متخليش الفرصة تفوتك ديماً — ابعت «${p}» في رسالة وهنرد عليك فوراً بكل التفاصيل وسرعة التنفيذ!`
 ];
 
 /** اختيار عشوائي سليم (آمن رياضيًا وسريع) من مصفوفة */
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function pick(arr, ...args) {
+  const item = arr[Math.floor(Math.random() * arr.length)];
+  return typeof item === 'function' ? item(...args) : item;
 }
 
 /**
  * يولد سكريبت تسويقي كامل ومخصص بسرعة الصاروخ مع كاش ذكي.
- * @param {object} input - { productName, targetAudience, price }
+ * @param {object} input - { productName, targetAudience, price, market, tone }
  * @returns {object} بيانات السكريبت المنظفة
  */
 function generate(input = {}) {
   // تنظيف المدخلات مع حماية من القيم الفارغة
-  const product = cleanText(input.productName || 'منتج مميز', 60);
-  const price = cleanText(input.price || 'سعر تنافسي', 30);
-  const audience = cleanText(input.targetAudience || 'الجمهور المستهدف', 80);
+  const product = cleanText(input.productName || 'منتج مميز', 100);
+  const price = cleanText(input.price || 'سعر تنافسي', 50);
+  const audience = cleanText(input.targetAudience || 'الجمهور المستهدف', 100);
+  const market = cleanText(input.market || 'egypt', 20);
 
   // مفتاح الكاش الفريد لهذا الطلب
-  const cacheKey = `${product}_${price}_${audience}`;
+  const cacheKey = `${product}_${price}_${audience}_${market}`;
   
   // لو النتيجة موجودة في الكاش السريع، رجعها في جزء من الميكرو ثانية! ⚡
   if (scriptCache.has(cacheKey)) {
@@ -69,20 +73,30 @@ function generate(input = {}) {
   }
 
   // توليد أجزاء متنوعة وخارقة
-  const hook = pick(HOOKS)(product);
-  const body = pick(BODIES)(product, price, audience);
-  const cta = pick(CTAS)(product);
+  const hook = pick(HOOKS, product, market);
+  const body = pick(BODIES, product, price, audience);
+  const cta = pick(CTAS, product);
 
   const hashtags = [
     '#تسويق_إلكتروني',
     '#Sales24Pro',
     `#${toHashtagSlug(product)}`,
-    '#عروض_مصر_النووية',
+    market === 'saudi' ? '#عروض_السعودية_النووية' : '#عروض_مصر_النووية',
     '#ترند_مبيعات',
-    audience === 'الجمهور المستهدف' ? '#منتج_أصلي_معتمد' : '#عرض_مباشر'
+    '#منتج_أصلي_معتمد'
   ].join(' ');
 
-  const result = { product, price, audience, hook, body, cta, hashtags };
+  const result = { 
+    success: true,
+    product, 
+    price, 
+    audience, 
+    market,
+    hook, 
+    body, 
+    cta, 
+    hashtags 
+  };
 
   // تخزين النتيجة في الكاش (مع التحقق من عدم تخطي الحجم الأقصى للذاكرة بأمان)
   if (scriptCache.size >= MAX_CACHE_SIZE) {
@@ -95,7 +109,7 @@ function generate(input = {}) {
 }
 
 /**
- * إضافة جديدة: توليد السكريبت في قالب نصي واحد جاهز للنشر مباشرة 📋
+ * توليد السكريبت في قالب نصي واحد جاهز للنشر مباشرة 📋
  */
 function generateFormatted(input) {
   const script = generate(input);
@@ -112,7 +126,7 @@ ${script.hashtags}
 }
 
 /**
- * إضافة جديدة: مسح الذاكرة المؤقتة عند الحاجة لتفريغ الرام
+ * مسح الذاكرة المؤقتة عند الحاجة لتفريغ الرام
  */
 function clearCache() {
   scriptCache.clear();
