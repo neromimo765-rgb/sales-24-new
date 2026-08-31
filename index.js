@@ -24,20 +24,22 @@ const { calculateProfit } = require('./profitCalculator');
 const upload = require('./uploadConfig');
 const Campaign = require('./models/Campaign');
 
-// Middlewares
+// Middlewares الأساسية والحماية
 const { 
   requestId, 
+  protect,
   notFoundHandler, 
   globalErrorHandler 
 } = require('./middleware');
-const { requestLoggerMiddleware } = require('./logger');
 
-// Cache بسيطة وسريعة للـ Middlewares
+// Cache متطور وآمن للذاكرة
 const cacheStore = new Map();
-function cacheMiddleware(durationInSeconds) {
+const MAX_CACHE_SIZE = 300;
+
+function cacheMiddleware(durationInSeconds = 60) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
-    const key = req.originalUrl || req.url;
+    const key = `web_cache_${req.originalUrl || req.url}`;
     const cachedResponse = cacheStore.get(key);
     
     if (cachedResponse && (Date.now() - cachedResponse.timestamp < durationInSeconds * 1000)) {
@@ -46,6 +48,10 @@ function cacheMiddleware(durationInSeconds) {
     
     const originalSend = res.send.bind(res);
     res.send = (body) => {
+      if (cacheStore.size >= MAX_CACHE_SIZE) {
+        const firstKey = cacheStore.keys().next().value;
+        cacheStore.delete(firstKey);
+      }
       cacheStore.set(key, { data: body, timestamp: Date.now() });
       originalSend(body);
     };
@@ -64,7 +70,7 @@ const analyticsRoutes = require('./routes/analytics');
 const app = express();
 
 // =====================================================================
-// 🛡️ الأمان والحماية المتقدمة
+// 🛡️ الأمان والحماية المتقدمة (Security Shield)
 // =====================================================================
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -85,7 +91,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // =====================================================================
-// ⚡ الأداء والسرعة
+// ⚡ الأداء والسرعة (Performance & Optimization)
 // =====================================================================
 app.use(compression({ level: 6, threshold: 1024 })); 
 app.use(cors({ origin: true, credentials: true }));
@@ -98,10 +104,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(requestId);
-app.use(requestLoggerMiddleware);
 
 // =====================================================================
-// 📁 الملفات الثابتة
+// 📁 الملفات الثابتة (Static Files)
 // =====================================================================
 const uploadsDir = path.join(__dirname, 'uploads');
 const publicDir = path.join(__dirname, 'public');
@@ -117,7 +122,7 @@ app.use('/public', express.static(publicDir, { maxAge: '7d', etag: true }));
 connectDB();
 
 // =====================================================================
-// 🌐 الصفحات الرئيسية
+// 🌐 الصفحات الرئيسية (HTML Views)
 // =====================================================================
 app.get('/', cacheMiddleware(30), (req, res) => {
   res.send(getMainDashboardHTML());
@@ -224,6 +229,7 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'healthy', uptime: process.uptime(), timestamp: new Date() });
 });
 
+// معالجة الأخطاء والمسارات غير الموجودة
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
@@ -269,7 +275,6 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
 .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(56,189,248,0.3); }
 .result { background: #090d16; border: 1px solid #334155; color: #38bdf8; padding: 20px; border-radius: 12px; margin-top: 20px; font-size: 14px; white-space: pre-wrap; display: none; line-height: 1.8; }
 .copy-btn { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 5px; font-weight: bold; }
-.alert-box { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-weight: bold; }
 .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #38bdf8; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 25px; border-radius: 10px; font-weight: bold; z-index: 1000; }
@@ -301,7 +306,6 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
     <p class="subtitle">منصة ذكية متكاملة لإدارة التسويق بمصر والسعودية</p>
     <div class="status">⚡ النظام يعمل بكفاءة تريليون في المية أونلاين</div>
     
-    <!-- اختيار السوق المستهدف والعملة -->
     <div class="form-group">
       <label>🌍 السوق المستهدف والجمهور:</label>
       <select id="market" onchange="updateCurrencyLabels()">
