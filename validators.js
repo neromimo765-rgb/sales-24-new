@@ -1,13 +1,44 @@
 // validators.js - نظام التحقق من البيانات
 const { body, validationResult } = require('express-validator');
 
+// قواعد التحقق لإنشاء حساب جديد (Register)
+const registerValidationRules = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage('الاسم مطلوب')
+    .isLength({ min: 2, max: 50 }).withMessage('الاسم يجب أن يكون بين 2 و 50 حرف')
+    .escape(),
+
+  body('email')
+    .trim()
+    .notEmpty().withMessage('البريد الإلكتروني مطلوب')
+    .isEmail().withMessage('بريد إلكتروني غير صالح')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty().withMessage('كلمة المرور مطلوبة')
+    .isLength({ min: 6 }).withMessage('كلمة المرور يجب ألا تقل عن 6 أحرف')
+];
+
+// قواعد التحقق لتسجيل الدخول (Login)
+const loginValidationRules = [
+  body('email')
+    .trim()
+    .notEmpty().withMessage('البريد الإلكتروني مطلوب')
+    .isEmail().withMessage('بريد إلكتروني غير صالح')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty().withMessage('كلمة المرور مطلوبة')
+];
+
 // قواعد التحقق للتحليل التسويقي
 const marketingValidationRules = [
   body('productName')
     .trim()
     .notEmpty().withMessage('اسم المنتج مطلوب')
     .isLength({ min: 2, max: 200 }).withMessage('اسم المنتج لازم يكون بين 2 و 200 حرف')
-    .escape(), // حماية من XSS
+    .escape(),
 
   body('category')
     .optional()
@@ -81,6 +112,8 @@ function validate(req, res, next) {
 }
 
 module.exports = {
+  registerValidationRules,
+  loginValidationRules,
   marketingValidationRules,
   scriptValidationRules,
   validate
