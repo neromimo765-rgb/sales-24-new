@@ -1,8 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const { registerValidationRules, loginValidationRules, validate } = require('../validators');
-const { protect } = require('../middleware'); // تأكد أن ملف middleware/index.js يصدر { protect } بشكل صحيح
+const { protect } = require('../middleware');
 const logger = require('../logger');
 
 const router = express.Router();
@@ -123,7 +124,7 @@ router.put('/update-profile', protect, async (req, res) => {
   }
 });
 
-// 🚀 [مضاف حديثاً] تغيير كلمة المرور
+// تغيير كلمة المرور
 router.put('/change-password', protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -137,7 +138,6 @@ router.put('/change-password', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
     }
 
-    // التحقق من صحة كلمة المرور الحالية
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'كلمة المرور الحالية غير صحيحة' });
@@ -150,6 +150,70 @@ router.put('/change-password', protect, async (req, res) => {
   } catch (error) {
     logger.error('خطأ في تغيير كلمة المرور:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء تغيير كلمة المرور' });
+  }
+});
+
+// 🚀 [مضاف حديثاً] طلب استعادة كلمة المرور (Forgot Password)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على مستخدم بهذا البريد الإلكتروني' });
+    }
+
+    // توليد رمز عشوائي وآمن
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // تشفير الرمز وتخزينه في قاعدة البيانات (مع وقت صلاحية 10 دقائق مثلاً)
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; 
+
+    await user.save();
+
+    // ملاحظة: هنا يمكنك دمج خدمة إرسال الإيميلات (مثل Nodemailer) لإرسال رابط الـ resetToken للمستخدم
+    res.json({ 
+      success: true, 
+      message: 'تم إرسال تعليمات استعادة كلمة المرور بنجاح',
+      // للتطوير فقط يمكنك رؤيته بالاستجابة، احذفه في الإنتاج (Production)
+      resetToken 
+    });
+  } catch (error) {
+    logger.error('خطأ في طلب استعادة كلمة المرور:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء طلب استعادة كلمة المرور' });
+  }
+});
+
+// 🚀 [مضاف حديثاً] إعادة تعيين كلمة المرور باستخدام الرمز (Reset Password)
+router.put('/reset-password/:token', async (req, res) => {
+  try {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'رابط إعادة التعيين غير صالح أو انتهت صلاحيته' });
+    }
+
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال كلمة المرور الجديدة' });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.json({ success: true, message: 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن' });
+  } catch (error) {
+    logger.error('خطأ في إعادة تعيين كلمة المرور:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء إعادة تعيين كلمة المرور' });
   }
 });
 
