@@ -17,13 +17,13 @@ const fs = require('fs');
 
 // الاستدعاءات الأساسية مع إصلاح خطأ استيراد connectDB
 const logger = require('./logger');
-const { connectDB } = require('./database'); // 🛠️ إصلاح خطأ TypeError: connectDB is not a function
+const { connectDB } = require('./database'); 
 const scriptGenerator = require('./scriptGenerator');
 const marketingEngine = require('./marketingEngine');
 const { calculateProfit } = require('./profitCalculator');
 const { upload, handleUploadErrors } = require('./uploadConfig');
 const Campaign = require('./models/Campaign');
-const User = require('./models/User'); // 👤 استدعاء نموذج المستخدم للربط الكامل
+const User = require('./models/User');
 
 // Middlewares الأساسية والحماية
 const { 
@@ -148,12 +148,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// 🎯 التحليل الشامل للمنتج والحملة التسويقية (مع دعم السوق والعملة)
+// 🎯 التحليل الشامل للمنتج والحملة التسويقية
 app.post('/api/comprehensive-marketing', marketingValidationRules, validate, async (req, res) => {
   try {
     const { productName, category, lightingScore, resolution, price, cost, market, uploadedFileUrl } = req.body;
     
-    // ضبط التحليل بناءً على السوق المستهدف (مصر أو السعودية أو الخليج)
     const targetMarket = ['saudi', 'uae', 'gulf'].includes(market) ? market : 'egypt';
     const marketingPlan = marketingEngine.analyzeProductAndPlan(productName, category, targetMarket);
     const mediaCheck = marketingEngine.evaluateMediaQuality('فيديو', resolution || '1080p', lightingScore || 8);
@@ -202,7 +201,7 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
   }
 });
 
-// 📁 رفع الوسائط مع معالجة الأخطاء المحسنة من Multer
+// 📁 رفع الوسائط
 app.post('/api/upload-media', upload.single('mediaFile'), handleUploadErrors, (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
@@ -247,7 +246,7 @@ const server = app.listen(PORT, () => {
 });
 
 // =====================================================================
-// 🛡️ حماية السيرفر من الـ Crashes المفاجئة (Global Error Guards)
+// 🛡️ حماية السيرفر من الـ Crashes المفاجئة
 // =====================================================================
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('❌ خطأ غير معالج (Unhandled Rejection):', reason);
@@ -263,7 +262,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // =====================================================================
-// 📄 HTML Templates (محدثة بالكامل لتشمل السوق المصري والسعودي والعملات)
+// 📄 HTML Templates (مصححة بالكامل ومكتملة الأقواس)
 // =====================================================================
 function getMainDashboardHTML() {
   return `<!DOCTYPE html>
@@ -303,7 +302,6 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 25px; border-radius: 10px; font-weight: bold; z-index: 1000; }
 .footer { text-align: center; padding: 30px 20px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 40px; }
-.footer a { color: #38bdf8; text-decoration: none; margin: 0 10px; }
 </style>
 </head>
 <body>
@@ -542,3 +540,4 @@ function getCampaignsHTML() {
 
 function getAnalyticsHTML() {
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>الإحصائيات</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;padding:20px;font-family:system-ui}h1{color:#38bdf8;text-align:center}.back{text-align:center;margin-top:20px}.back a{color:#38bdf8}</style></head><body><h1>📊 الإحصائيات</h1><div style="text-align:center;margin-top:30px;"><p>لوحة التحليلات المتقدمة تعمل بكفاءة تريليونية 🚀</p></div><div class="back"><a href="/">← الرئيسية</a></div></body></html>`;
+}
