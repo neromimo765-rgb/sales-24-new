@@ -1,5 +1,5 @@
 // =====================================================================
-// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية النهائية)
+// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية المطورة والنهائية)
 // =====================================================================
 
 // ---------- دوال معالجة ونصوص محلية ----------
@@ -38,6 +38,15 @@ const MARKET_DATABASE = {
     ],
     targetHookEgypt: "هل تعاني من هذه المشكلة المتكررة؟ إليك الحل النهائي!",
     targetHookSaudi: "تعاني من هالمشكلة وتبغي الحل الأكيد؟ إليك الخلاصة!"
+  },
+  cleaning: {
+    strategy: "إبراز قوة التنظيف الفوري، توفير المجهود، والرائحة المنعشة للمنتج مع إثبات بصري.",
+    bestFormats: [
+      "فيديو تجربة عملية لإزالة بقعة مستعصية (قبل وبعد)",
+      "فيديو سريع لطريقة الاستخدام اليومي في المنزل"
+    ],
+    targetHookEgypt: "البقع الصعبة انتهت تماماً! أقوى منتج تنظيف يرجع كل جديد في ثوانٍ.",
+    targetHookSaudi: "البقع والأوساخ الصعبة راحت بلا رجعة! النظافة واللمعان بكل سهولة."
   },
   electronics: {
     strategy: "إبراز المواصفات الفنية والعمر الطويل مع فيديو تجريبي حقيقي (Unboxing).",
@@ -95,13 +104,13 @@ function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', pl
   
   // تحديد اللهجة والسوق (مصر أو السعودية)
   const isSaudi = targetMarket === 'saudi';
-  const marketName = isSaudi ? 'المملكة العربية السعودية 🇸🇦' : 'جمهورية مصر العربية 🇪🇬';
+  const marketName = isSaudi ? 'المملكة العربية السعودية 🇸🇦' : 'جمهورية مصر العربية 🇪يجبت 🇪🇬';
   const currency = isSaudi ? 'ريال سعودي' : 'جنيه مصري';
   
   const targetHook = isSaudi ? plan.targetHookSaudi : plan.targetHookEgypt;
   
   const categoryLabel = category && category !== 'default'
-    ? `للمنتجات الفاخرة من فئة "${category}"`
+    ? `للمنتجات المميزة من فئة "${category}"`
     : 'لمختلف فئات المنتجات';
 
   // تخصيص النص بناءً على منصة الإعلانات المختارة
@@ -153,6 +162,40 @@ function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', pl
       hashtags: isSaudi ? `#Sales24 #تسويق_إلكتروني #${slug} #عروض_السعودية #متجر_ترند` : `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
       suggestedMusic: platform === 'tiktok' ? "موسيقى تريند سريعة وحماسية تناسب تيك توك" : "موسيقى تحفيزية هادئة وجذابة للإعلانات المموَلة"
     }
+  };
+}
+
+// ---------- إضافة جديدة: حاسبة الأرباح المالية المتقدمة (Profit & ROI Calculator) ----------
+
+function calculateFinancials(sellingPrice, costPrice, shippingCost = 0, adsCostPerUnit = 0, quantity = 1) {
+  const price = validateNumber(sellingPrice, 0, 1000000, 'sellingPrice');
+  const cost = validateNumber(costPrice, 0, 1000000, 'costPrice');
+  const shipping = validateNumber(shippingCost, 0, 100000, 'shippingCost');
+  const ads = validateNumber(adsCostPerUnit, 0, 100000, 'adsCostPerUnit');
+  const qty = validateNumber(quantity, 1, 100000, 'quantity');
+
+  const totalRevenue = price * qty;
+  const totalCost = (cost + shipping + ads) * qty;
+  const netProfitPerUnit = price - (cost + shipping + ads);
+  const totalNetProfit = netProfitPerUnit * qty;
+  
+  // حساب عائد الإنفاق الإعلاني (ROAS) ونسبة الربح الهامشية
+  const totalAdsCost = ads * qty;
+  const roas = totalAdsCost > 0 ? (totalRevenue / totalAdsCost).toFixed(2) : 'غير مقاس (بدون إعلانات)';
+  const profitMargin = price > 0 ? ((netProfitPerUnit / price) * 100).toFixed(1) : 0;
+
+  return {
+    quantity: qty,
+    sellingPrice: price,
+    costPrice: cost,
+    shippingCost: shipping,
+    adsCostPerUnit: ads,
+    netProfitPerUnit,
+    totalRevenue,
+    totalNetProfit,
+    profitMargin: `${profitMargin}%`,
+    roas,
+    financialStatus: netProfitPerUnit > 0 ? "🟢 صفقة مربحة وعالية الجدوى المالية" : "🔴 تحذير: الصفقة تخسر مالياً بناءً على التكاليف المدخلة"
   };
 }
 
@@ -231,5 +274,6 @@ module.exports = {
   evaluateMediaQuality, 
   getMarketingPlan, 
   parseResolution, 
-  estimateAdsBudget 
+  estimateAdsBudget,
+  calculateFinancials
 };
