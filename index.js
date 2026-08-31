@@ -262,7 +262,7 @@ process.on('uncaughtException', (error) => {
 });
 
 // =====================================================================
-// 📄 HTML Templates (مصححة بالكامل ومكتملة الأقواس)
+// 📄 HTML Templates (مصححة بالكامل مع أزرار الحفظ والنسخ الاحتياطي للموبايل)
 // =====================================================================
 function getMainDashboardHTML() {
   return `<!DOCTYPE html>
@@ -296,6 +296,9 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
 .row .form-group { flex: 1; min-width: 150px; }
 .btn { display: block; background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%); color: white; padding: 14px; border-radius: 12px; text-align: center; border: none; width: 100%; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 20px; transition: 0.3s; }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(56,189,248,0.3); }
+.backup-section { display: flex; gap: 10px; margin-top: 15px; }
+.backup-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #38bdf8; background: rgba(56,189,248,0.1); color: #38bdf8; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; }
+.backup-btn:hover { background: #38bdf8; color: #0f172a; }
 .result { background: #090d16; border: 1px solid #334155; color: #38bdf8; padding: 20px; border-radius: 12px; margin-top: 20px; font-size: 14px; white-space: pre-wrap; display: none; line-height: 1.8; }
 .copy-btn { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 5px; font-weight: bold; }
 .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #38bdf8; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
@@ -328,7 +331,14 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
     <p class="subtitle">منصة ذكية متكاملة لإدارة التسويق بمصر والسعودية</p>
     <div class="status">⚡ النظام يعمل بكفاءة تريليون في المية أونلاين</div>
     
-    <div class="form-group">
+    <!-- أزرار النسخ الاحتياطي وحفظ الملفات محلياً على التليفون -->
+    <div class="backup-section">
+      <button class="backup-btn" onclick="exportProjectsBackup()">💾 حفظ نسخة للمشاريع (تنزيل ملف)</button>
+      <button class="backup-btn" onclick="document.getElementById('importFile').click()">📂 استرجاع نسخة من ملف</button>
+      <input type="file" id="importFile" style="display:none" accept=".json" onchange="importProjectsBackup(event)" />
+    </div>
+
+    <div class="form-group" style="margin-top: 15px;">
       <label>🌍 السوق المستهدف والجمهور:</label>
       <select id="market" onchange="updateCurrencyLabels()">
         <option value="egypt">مصر 🇪🇬 (الجمهور المصري - بالجنيه المصري ج.م)</option>
@@ -429,12 +439,60 @@ function showToast(msg, type='success') {
   setTimeout(() => t.remove(), 3000);
 }
 
+// تخزين المشاريع محلياً على تليفونك
+function saveProjectLocally(projectData) {
+  let projects = JSON.parse(localStorage.getItem('sales24_local_projects') || '[]');
+  projects.unshift(projectData);
+  localStorage.setItem('sales24_local_projects', JSON.stringify(projects));
+  updateLocalStats();
+}
+
+function updateLocalStats() {
+  const projects = JSON.parse(localStorage.getItem('sales24_local_projects') || '[]');
+  document.getElementById('stat-campaigns').textContent = projects.length;
+  document.getElementById('stat-active').textContent = projects.length > 0 ? projects.length : 0;
+  let totalProfit = projects.reduce((sum, p) => sum + (p.profitPerUnit || 0), 0);
+  document.getElementById('stat-profit').textContent = totalProfit.toFixed(0);
+}
+
+function exportProjectsBackup() {
+  const projects = localStorage.getItem('sales24_local_projects') || '[]';
+  const blob = new Blob([projects], { type: 'application/json;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sales24-backup-' + Date.now() + '.json';
+  a.click();
+  showToast('تم حفظ نسخة المشاريع على التليفون بنجاح! 💾');
+}
+
+function importProjectsBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      if (Array.isArray(importedData)) {
+        localStorage.setItem('sales24_local_projects', JSON.stringify(importedData));
+        updateLocalStats();
+        showToast('تم استرجاع جميع المشاريع بنجاح! 🚀');
+      } else {
+        showToast('ملف غير صالح!', 'error');
+      }
+    } catch(err) {
+      showToast('خطأ في قراءة الملف!', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
 async function loadStats() {
+  updateLocalStats();
   try {
     const res = await fetch('/api/analytics/dashboard');
     const data = await res.json();
-    if (data.success) {
-      document.getElementById('stat-campaigns').textContent = data.data.totalCampaigns || 0;
+    if (data.success && data.data.totalCampaigns > 0) {
+      document.getElementById('stat-campaigns').textContent = data.data.totalCampaigns;
       document.getElementById('stat-active').textContent = data.data.activeCampaigns || 0;
       document.getElementById('stat-profit').textContent = (data.data.totalProfit || 0).toFixed(0);
     }
@@ -498,7 +556,16 @@ async function runAnalysis() {
         '🏷️ <b>الهاشتاجات الدعائية:</b> ' + p.contentPackage.hashtags;
       
       contentDiv.innerHTML = latestReport;
-      showToast('تم التحليل بنجاح واستهداف السوق المطلوبة! ✨');
+      
+      // حفظ المشروع محلياً في تليفونك
+      saveProjectLocally({
+        productName: p.product,
+        market,
+        profitPerUnit: profit?.valid ? profit.profitPerUnit : 0,
+        date: new Date().toLocaleDateString('ar-EG')
+      });
+
+      showToast('تم التحليل وحفظ المشروع على تليفونك بنجاح! ✨');
       loadStats();
     } else {
       contentDiv.innerHTML = '❌ ' + (responseData.message || 'خطأ غير معروف');
@@ -531,7 +598,7 @@ function downloadReport() {
 }
 
 function getLoginHTML() {
-  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>دخول</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui}.card{background:rgba(15,23,42,0.9);padding:30px;border-radius:15px;width:100%;max-width:380px;border:1px solid #334155}input{width:100%;padding:10px;margin:10px 0;background:#1e293b;border:1px solid #475569;color:#fff;border-radius:6px}button{width:100%;padding:12px;background:#38bdf8;border:none;color:#000;font-weight:bold;border-radius:6px;cursor:pointer}</style></head><body><div class="card"><h2>تسجيل الدخول</h2><input type="email" id="email" placeholder="البريد"><input type="password" id="pass" placeholder="كلمة المرور"><button onclick="login()">دخول</button></div><script>async function login(){const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('pass').value})});const d=await r.json();if(d.success){localStorage.setItem('token',d.token);location.href='/';}else alert(d.message);}</script></body></html>`;
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>دخول</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui}.card{background:rgba(15,23,42,0.9);padding:30px;border-radius:15px;width:100%;max-width:380px;border:1px solid #334155}input{width:100%;padding:10px;margin:10px 0;background:#1e293b;border:1px solid #475569;color:#fff;border-radius:6px}button{width:100%;padding:12px;background:#38bdf8;border:none;color:#000;font-weight:bold;border-radius:6px;cursor:pointer}</style></head><body><div class="card"><h2>تسجيل الدخول</h2><input type="email" id="email" placeholder="البريد"><input type="password" id="pass" placeholder="كلمة المرور"><button onclick="login()">دخول</button></div><script>async function login(){const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('pass').value})});const d=r.json();if(d.success){localStorage.setItem('token',d.token);location.href='/';}else alert(d.message);}</script></body></html>`;
 }
 
 function getCampaignsHTML() {
