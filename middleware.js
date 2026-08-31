@@ -3,6 +3,8 @@
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
+const jwt = require('jsonwebtoken');
+const User = require('./models/User'); // تأكد من صحة مسار نموذج المستخدم
 const logger = require('./logger');
 
 // إضافة Request ID لكل طلب للتتبع الدقيق
@@ -10,6 +12,51 @@ function requestId(req, res, next) {
   req.id = uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
+}
+
+// حماية المسارات والتحقق من التوكن (JWT)
+async function protect(req, res, next) {
+  try {
+    let token;
+
+    // التحقق من وجود التوكن في الـ Headers أو الـ Cookies
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'غير مسموح لك بالوصول، يرجى تسجيل الدخول أولاً 🚫',
+        requestId: req.id
+      });
+    }
+
+    // فك تشفير التوكن والتحقق منه
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // التحقق من أن المستخدم ما زال موجوداً في قاعدة البيانات
+    const currentUser = await User.findById(decoded.id).lean();
+    if (!currentUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'المستخدم المرتبط بهذا التوكن لم يعد موجوداً',
+        requestId: req.id
+      });
+    }
+
+    // إرفاق بيانات المستخدم بالطلب
+    req.user = currentUser;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'التوكن غير صالح أو انتهت صلاحيته',
+      requestId: req.id
+    });
+  }
 }
 
 // تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
@@ -91,6 +138,7 @@ function globalErrorHandler(err, req, res, next) {
 
 module.exports = {
   requestId,
+  protect,
   requestLogger,
   notFoundHandler,
   globalErrorHandler
