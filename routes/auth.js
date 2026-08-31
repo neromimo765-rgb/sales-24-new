@@ -163,21 +163,17 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(404).json({ success: false, message: 'لم يتم العثور على مستخدم بهذا البريد الإلكتروني' });
     }
 
-    // توليد رمز عشوائي وآمن
     const resetToken = crypto.randomBytes(32).toString('hex');
     
-    // تشفير الرمز وتخزينه في قاعدة البيانات (مع وقت صلاحية 10 دقائق مثلاً)
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; 
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // صلاحية لمدّة 10 دقائق
 
     await user.save();
 
-    // ملاحظة: هنا يمكنك دمج خدمة إرسال الإيميلات (مثل Nodemailer) لإرسال رابط الـ resetToken للمستخدم
     res.json({ 
       success: true, 
       message: 'تم إرسال تعليمات استعادة كلمة المرور بنجاح',
-      // للتطوير فقط يمكنك رؤيته بالاستجابة، احذفه في الإنتاج (Production)
-      resetToken 
+      resetToken // للتطوير فقط، يُفضل إرساله عبر البريد الإلكتروني في الإنتاج
     });
   } catch (error) {
     logger.error('خطأ في طلب استعادة كلمة المرور:', error);
