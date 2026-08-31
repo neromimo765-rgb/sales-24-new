@@ -17,12 +17,13 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
-    <html>
+    <html lang="ar" dir="rtl">
     <head>
       <title>Sales 24 - Dashboard</title>
+      <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        * { font-family: system-ui; box-sizing: border-box; }
+        * { font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box; }
         body { 
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
@@ -49,14 +50,16 @@ app.get('/', (req, res) => {
           color: #10b981;
           font-weight: bold;
         }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; font-size: 14px; }
         input, select {
           width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
           border-radius: 8px;
           font-size: 15px;
+          background: #fff;
+          color: #333;
         }
         .btn {
           display: block;
@@ -76,7 +79,7 @@ app.get('/', (req, res) => {
         .result {
           background: #1e293b;
           color: #38bdf8;
-          padding: 15px;
+          padding: 18px;
           border-radius: 10px;
           margin-top: 20px;
           font-size: 14px;
@@ -122,24 +125,28 @@ app.get('/', (req, res) => {
           </select>
         </div>
         
-        <button class="btn" onclick="runComprehensiveMarketing()">تشغيل التحليل الشامل وخطة الإعلان 🎯</button>
+        <button class="btn" id="analyzeBtn" onclick="runComprehensiveMarketing()">تشغيل التحليل الشامل وخطة الإعلان 🎯</button>
         
         <div id="resultBox" class="result"></div>
       </div>
 
       <script>
         async function runComprehensiveMarketing() {
-          const productName = document.getElementById('productName').value;
+          const productName = document.getElementById('productName').value.trim();
           const category = document.getElementById('productCategory').value;
           const lightingScore = document.getElementById('lightingScore').value;
           const resolution = document.getElementById('resolution').value;
           const box = document.getElementById('resultBox');
+          const btn = document.getElementById('analyzeBtn');
           
           if(!productName) {
             alert('من فضلك اكتب اسم المنتج الأول يا محمد!');
+            document.getElementById('productName').focus();
             return;
           }
           
+          btn.disabled = true;
+          btn.textContent = '⏳ جاري التحليل...';
           box.style.display = 'block';
           box.innerHTML = '⏳ جاري تشغيل التحليل الذكي وفحص الوسائط عبر السيرفر...';
           
@@ -155,25 +162,28 @@ app.get('/', (req, res) => {
               const p = responseData.data.marketingPlan;
               const m = responseData.data.mediaCheck;
               
-              box.innerHTML = '✨ **التقرير التسويقي والشامل:**\\n\\n' + 
-                              '📦 **المنتج:** ' + p.product + '\\n' + 
-                              '📊 **حالة التحليل:** ' + p.status + '\\n\\n' + 
-                              '🔍 **ملخص دراسة السوق:**\\n' + p.marketResearch.searchSummary + '\\n' + 
-                              '👥 **الجمهور المستهدف:** ' + p.marketResearch.targetAudience + '\\n\\n' + 
-                              '🎬 **أفضل أشكال الإعلانات:**\\n' + 
+              box.innerHTML = '✨ <b>التقرير التسويقي والشامل:</b>\\n\\n' + 
+                              '📦 <b>المنتج:</b> ' + p.product + '\\n' + 
+                              '📊 <b>حالة التحليل:</b> ' + p.status + '\\n\\n' + 
+                              '🔍 <b>ملخص دراسة السوق:</b>\\n' + p.marketResearch.searchSummary + '\\n' + 
+                              '👥 <b>الجمهور المستهدف:</b> ' + p.marketResearch.targetAudience + '\\n\\n' + 
+                              '🎬 <b>أفضل أشكال الإعلانات:</b>\\n' + 
                               '1️⃣ ' + p.adFormats[0].type + ' (' + p.adFormats[0].concept + ')\\n' + 
                               '2️⃣ ' + p.adFormats[1].type + ' (' + p.adFormats[1].concept + ')\\n\\n' + 
-                              '📝 **السكريبت الإعلاني المقترح:**\\n' + p.contentPackage.script + '\\n\\n' + 
-                              '🎵 **الموسيقى المقترحة:** ' + p.contentPackage.suggestedMusic + '\\n\\n' + 
-                              '📱 **تقييم جودة الوسائط (الفيديو/الصورة):**\\n' + 
+                              '📝 <b>السكريبت الإعلاني المقترح:</b>\\n' + p.contentPackage.script + '\\n\\n' + 
+                              '🎵 <b>الموسيقى المقترحة:</b> ' + p.contentPackage.suggestedMusic + '\\n\\n' + 
+                              '📱 <b>تقييم جودة الوسائط (الفيديو/الصورة):</b>\\n' + 
                               '• الحالة: ' + m.qualityStatus + '\\n' + 
                               '• التوصيات: ' + m.recommendations.join(' | ') + '\\n\\n' + 
-                              '🏷️ **الهاشتاجات:** ' + p.contentPackage.hashtags;
+                              '🏷️ <b>الهاشتاجات:</b> ' + p.contentPackage.hashtags;
             } else {
               box.innerHTML = '❌ خطأ: ' + responseData.message;
             }
           } catch(e) {
             box.innerHTML = '❌ فشل الاتصال بالسيرفر، تأكد من الإنترنت.';
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'تشغيل التحليل الشامل وخطة الإعلان 🎯';
           }
         }
       </script>
@@ -241,4 +251,5 @@ app.get('/api/status', (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Sales 24 يعمل على المنفذ ${PORT}`);
+  console.log(`🌐 افتح المتصفح على الرابط: http://localhost:${PORT}`);
 });
