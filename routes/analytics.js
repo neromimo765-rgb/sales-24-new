@@ -1,16 +1,21 @@
+// =====================================================================
+// 📊 analytics.js - مسارات التحليلات والإحصائيات (النسخة النووية المطورة)
+// =====================================================================
+
 const express = require('express');
 const Campaign = require('../models/Campaign');
-const { cacheMiddleware } = require('../middleware');
+const { protect } = require('../middleware');
+const logger = require('../logger');
 
 const router = express.Router();
 
-// إحصائيات شاملة للـ Dashboard
-router.get('/dashboard', cacheMiddleware(120), async (req, res) => {
+// 📈 إحصائيات شاملة للـ Dashboard (مع الحماية والتسجيل اللحظي)
+router.get('/dashboard', protect, async (req, res) => {
   try {
     const [
       totalCampaigns,
       activeCampaigns,
-      totalProfit,
+      totalProfitResult,
       topCategories,
       recentCampaigns,
       monthlyStats
@@ -37,19 +42,22 @@ router.get('/dashboard', cacheMiddleware(120), async (req, res) => {
       ])
     ]);
 
+    const totalProfit = totalProfitResult[0]?.total || 0;
+
     res.json({
       success: true,
       data: {
         totalCampaigns,
         activeCampaigns,
-        totalProfit: totalProfit[0]?.total || 0,
+        totalProfit,
         topCategories,
         recentCampaigns,
         monthlyStats
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في جلب الإحصائيات' });
+    logger.error('❌ خطأ في جلب إحصائيات الـ Dashboard:', error.message);
+    res.status(500).json({ success: false, message: 'حدث خطأ داخلي أثناء جلب الإحصائيات والتحليلات' });
   }
 });
 
