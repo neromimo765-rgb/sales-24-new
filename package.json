@@ -2,9 +2,9 @@
   "name": "sales-24",
   "version": "3.0.0",
   "description": "تطبيق Sales 24 - منصة إدارة التسويق",
-  "main": "server/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "node index.js"
   },
   "engines": {
     "node": ">=18.0.0"
