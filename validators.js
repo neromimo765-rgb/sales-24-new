@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية النهائية)
+// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية النهائية والمحدثة)
 // =====================================================================
 const { body, validationResult } = require('express-validator');
 
@@ -34,7 +34,7 @@ const loginValidationRules = [
     .notEmpty().withMessage('كلمة المرور مطلوبة')
 ];
 
-// 🎯 قواعد التحقق للتحليل التسويقي والحملات (محدثة لتتطابق مع الواجهة بالكامل)
+// 🎯 قواعد التحقق للتحليل التسويقي والحملات (محدثة لتتطابق مع الواجهة وفئة المنظفات)
 const marketingValidationRules = [
   body('productName')
     .trim()
@@ -45,7 +45,7 @@ const marketingValidationRules = [
   body('category')
     .optional()
     .trim()
-    .isIn(['default', 'electronics', 'beauty', 'home', 'fashion', 'food', 'fitness', 'general'])
+    .isIn(['default', 'cleaning', 'electronics', 'beauty', 'home', 'fashion', 'food', 'fitness', 'general'])
     .withMessage('فئة المنتج غير صالحة'),
 
   body('lightingScore')
