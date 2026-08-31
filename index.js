@@ -2,6 +2,7 @@
 // 🚀 Sales 24 Pro - النسخة النووية النهائية المتكاملة (تريليون في المية)
 // =====================================================================
 const express = require('express');
+const compression = require('compression'); // 🚀 أضفنا مكتبة الضغط هنا لزيادة السرعة
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
@@ -17,6 +18,9 @@ const { marketingValidationRules, scriptValidationRules, validate } = require('.
 const { requestId, requestLogger, notFoundHandler, globalErrorHandler } = require('./middleware');
 
 const app = express();
+
+// 🚀 تفعيل الضغط لجميع الاستجابات لتصبح أسرع بضعفين
+app.use(compression());
 
 // 2. إعدادات السيرفر والـ Middlewares الأساسية
 app.use(cors());
@@ -372,7 +376,8 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
 // مسار استعراض أرشيف الحملات السابقة
 app.get('/api/campaigns', async (req, res) => {
   try {
-    const campaigns = await Campaign.find().sort({ createdAt: -1 }).limit(20);
+    // 🚀 أضفنا .lean() هنا لتعيين أقصى سرعة لجلب الأرشيف من قاعدة البيانات
+    const campaigns = await Campaign.find().lean().sort({ createdAt: -1 }).limit(20);
     res.json({ success: true, count: campaigns.length, data: campaigns });
   } catch (error) {
     res.status(500).json({ success: false, message: 'تعذر جلب أرشيف الحملات' });
