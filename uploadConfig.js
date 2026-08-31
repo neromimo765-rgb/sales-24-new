@@ -7,30 +7,39 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-// إنشاء مجلد الرفع بخاصية الاستقرار الذاتي وتفادي الأخطاء
-const uploadDir = path.join(__dirname, '../uploads'); // تم التعديل ليصبح في جذر المشروع بمسار دقيق
+// إنشاء مجلد الرفع في جذر المشروع مباشرة لضمان عدم ضياع الملفات أو حدوث خطأ في المسارات
+const uploadDir = path.join(process.cwd(), 'uploads');
+
 try {
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 } catch (err) {
-  console.error('⚠️ خطأ في إنشاء مجلد الرفع:', err.message);
+  console.error('⚠️ خطأ فادح في إنشاء مجلد الرفع:', err.message);
 }
 
 // إعداد التخزين الفائق السرعة
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // التأكد التام من وجود المجلد قبل حفظ كل ملف تفادياً لأي حذف يدوي مفاجئ
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // توليد اسم فريد بالكامل لمنع أي تداخل أو اختراق (UUID v4) مع الحفاظ على الامتداد الأصلي بأمان
-    const safeExt = path.extname(file.originalname).toLowerCase();
-    const uniqueName = `${uuidv4()}-${Date.now()}${safeExt}`;
-    cb(null, uniqueName);
+    try {
+      // تنظيف اسم الملف الأصلي من أي حروف خاصة أو مسافات قد تسبب مشاكل في الروابط
+      const safeExt = path.extname(file.originalname).toLowerCase();
+      const uniqueName = `${uuidv4()}-${Date.now()}${safeExt}`;
+      cb(null, uniqueName);
+    } catch (error) {
+      cb(error);
+    }
   }
 });
 
-// استخدام Set للبحث اللحظي O(1) بدلاً من المصفوفات العادية لتسريع الفلترة الصاروخية
+// استخدام Set للبحث اللحظي O(1) لتسريع الفلترة والصلاِحيات
 const ALLOWED_MIME_TYPES = new Set([
   // الصور
   'image/jpeg', 
@@ -46,11 +55,15 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/mpeg'
 ]);
 
-// قائمة الامتدادات المسموحة كطبقة حماية إضافية ضد التلاعب بالـ MimeTypes
+// قائمة الامتدادات المسموحة كطبقة حماية إضافية
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.mp4', '.webm', '.mov', '.avi', '.mpeg']);
 
-// فلتر أنواع الملفات المسموحة (بأقصى سرعة وأمان)
+// فلتر أنواع الملفات المسموحة مع حماية ضد الملفات الفارغة أو التالفة
 const fileFilter = (req, file, cb) => {
+  if (!file || !file.originalname) {
+    return cb(new Error('الملف المرفوع غير صالح أو مفقود.'), false);
+  }
+
   const fileExt = path.extname(file.originalname).toLowerCase();
   
   if (ALLOWED_MIME_TYPES.has(file.mimetype) && ALLOWED_EXTENSIONS.has(fileExt)) {
@@ -83,6 +96,7 @@ const handleUploadErrors = (err, req, res, next) => {
     }
     return res.status(400).json({ success: false, message: `خطأ في رفع الملف: ${err.message}` });
   } else if (err) {
+    // معالجة الأخطاء القادمة من الـ fileFilter
     return res.status(400).json({ success: false, message: err.message });
   }
   next();
