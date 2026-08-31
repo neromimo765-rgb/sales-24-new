@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية المُحدثة)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية النهائية والمؤمنة)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
@@ -7,13 +7,17 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User'); // تأكد من صحة مسار نموذج المستخدم
 const logger = require('./logger');
 
-// تخزين مؤقت بسيط في الذاكرة (Memory Cache)
+// تخزين مؤقت متطور في الذاكرة مع نظام حماية للذاكرة (Memory Guard)
 const cacheStore = new Map();
+const MAX_CACHE_SIZE = 500; // أقصى عدد عناصر مخزنة لتجنب استهلاك الذاكرة
 
-// 🚀 [مضاف حديثاً] دالة التخزين المؤقت (Cache Middleware) لحل مشكلة campaigns.js
+/**
+ * 🚀 دالة التخزين المؤقت (Cache Middleware) مع تنظيف تلقائي للذاكرة
+ * @param {number} durationInSeconds - مدة الصلاحية بالثواني
+ */
 function cacheMiddleware(durationInSeconds = 60) {
   return (req, res, next) => {
-    // تخطي الـ Cache إذا لم تكن طلبات GET
+    // تخطي الـ Cache تماماً إذا لم تكن طلبات GET
     if (req.method !== 'GET') {
       return next();
     }
@@ -21,17 +25,30 @@ function cacheMiddleware(durationInSeconds = 60) {
     const key = `cache_${req.originalUrl || req.url}`;
     const cachedResponse = cacheStore.get(key);
 
+    // التحقق من صلاحية الكاش
     if (cachedResponse && cachedResponse.expiry > Date.now()) {
       return res.json(cachedResponse.data);
+    }
+
+    // إذا انتهت صلاحيته، احذفه لتوفير الذاكرة
+    if (cachedResponse) {
+      cacheStore.delete(key);
     }
 
     // حفظ النسخة الأصلية من res.json لاعتراض البيانات وتخزينها
     const originalJson = res.json.bind(res);
     res.json = (body) => {
+      // إدارة حجم الكاش لمنع امتلاء الذاكرة (LRU بسيط: حذف أقدم عنصر لو وصل للحد الأقصى)
+      if (cacheStore.size >= MAX_CACHE_SIZE) {
+        const firstKey = cacheStore.keys().next().value;
+        cacheStore.delete(firstKey);
+      }
+
       cacheStore.set(key, {
         data: body,
-        expiry: Date.now() + durationInSeconds * 1000
+        expiry: Date.now() + (durationInSeconds * 1000)
       });
+
       return originalJson(body);
     };
 
@@ -39,19 +56,19 @@ function cacheMiddleware(durationInSeconds = 60) {
   };
 }
 
-// إضافة Request ID لكل طلب للتتبع الدقيق
+// 🆔 إضافة Request ID لكل طلب للتتبع والدقيق في اللوجات
 function requestId(req, res, next) {
   req.id = uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
 }
 
-// حماية المسارات والتحقق من التوكن (JWT)
+// 🔒 حماية المسارات والتحقق من التوكن (JWT)
 async function protect(req, res, next) {
   try {
     let token;
 
-    // التحقق من وجود التوكن في الـ Headers أو الـ Cookies
+    // التحقق من وجود التوكن في الـ Headers (Bearer) أو الـ Cookies
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     } else if (req.cookies && req.cookies.token) {
@@ -66,10 +83,10 @@ async function protect(req, res, next) {
       });
     }
 
-    // فك تشفير التوكن والتحقق منه
+    // فك تشفير التوكن والتحقق منه سرياً
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // التحقق من أن المستخدم ما زال موجوداً في قاعدة البيانات
+    // التحقق من أن المستخدم ما زال موجوداً في قاعدة البيانات ولم يتم حذفه
     const currentUser = await User.findById(decoded.id).lean();
     if (!currentUser) {
       return res.status(401).json({
@@ -79,7 +96,7 @@ async function protect(req, res, next) {
       });
     }
 
-    // إرفاق بيانات المستخدم بالطلب
+    // إرفاق بيانات المستخدم بالطلب للاستخدام اللاحق
     req.user = currentUser;
     next();
   } catch (error) {
@@ -91,7 +108,7 @@ async function protect(req, res, next) {
   }
 }
 
-// تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
+// 📊 تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
 function requestLogger(req, res, next) {
   const start = Date.now();
 
@@ -111,7 +128,7 @@ function requestLogger(req, res, next) {
   next();
 }
 
-// معالج المسارات غير الموجودة (404)
+// ❌ معالج المسارات غير الموجودة (404)
 function notFoundHandler(req, res) {
   res.status(404).json({
     success: false,
@@ -121,7 +138,7 @@ function notFoundHandler(req, res) {
   });
 }
 
-// معالج الأخطاء العام والشامل (500)
+// ⚠️ معالج الأخطاء العام والشامل (500 وأخطاء النظام)
 function globalErrorHandler(err, req, res, next) {
   logger.error('حدث خطأ غير متوقع في السيرفر', {
     requestId: req.id,
@@ -158,7 +175,7 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل
+  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل (Production vs Development)
   res.status(err.status || 500).json({
     success: false,
     message: process.env.NODE_ENV === 'production'
@@ -169,7 +186,7 @@ function globalErrorHandler(err, req, res, next) {
 }
 
 module.exports = {
-  cacheMiddleware, // تمت الإضافة هنا بنجاح
+  cacheMiddleware,
   requestId,
   protect,
   requestLogger,
