@@ -1,5 +1,5 @@
 // =====================================================================
-// 📊 logger.js - نظام السجلات الاحترافي باستخدام Winston (النسخة النووية المطورة)
+// 📊 logger.js - نظام السجلات الاحترافي باستخدام Winston (النسخة النووية النهائية)
 // =====================================================================
 
 const winston = require('winston');
@@ -22,7 +22,7 @@ const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
     let logMessage = `[${timestamp}] [${level}]: ${message}`;
-    if (Object.keys(meta).length > 0) {
+    if (meta && Object.keys(meta).length > 0) {
       logMessage += ` | Meta: ${JSON.stringify(meta)}`;
     }
     if (stack) {
@@ -58,15 +58,17 @@ const logger = winston.createLogger({
   ]
 });
 
-// إضافة طباعة السجلات في الكونسول (ممتازة لمنصات النشر مثل Railway)
-logger.add(new winston.transports.Console({
-  format: consoleFormat
-}));
+// إضافة طباعة السجلات في الكونسول (ممتازة لمنصات النشر مثل Railway و Render)
+if (process.env.NODE_ENV !== 'test') {
+  logger.add(new winston.transports.Console({
+    format: consoleFormat
+  }));
+}
 
 /**
- * 🚀 إضافة جديدة: Middleware لـ Express لتسجيل حركة الطلبات تلقائياً (HTTP Request Logger)
+ * 🚀 Middleware لـ Express لتسجيل حركة الطلبات تلقائياً (HTTP Request Logger)
  */
-function requestLoggerMiddleware(req, res, next) {
+const requestLoggerMiddleware = (req, res, next) => {
   const start = Date.now();
   
   res.on('finish', () => {
@@ -76,7 +78,7 @@ function requestLoggerMiddleware(req, res, next) {
       url: req.originalUrl || req.url,
       status: res.statusCode,
       duration: `${duration}ms`,
-      ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
+      ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || '-'
     };
 
     if (res.statusCode >= 500) {
@@ -89,7 +91,9 @@ function requestLoggerMiddleware(req, res, next) {
   });
 
   next();
-}
+};
+
+// ربط التصدير الاحترافي للـ Logger والـ Middleware معاَ
+logger.requestLoggerMiddleware = requestLoggerMiddleware;
 
 module.exports = logger;
-module.exports.requestLoggerMiddleware = requestLoggerMiddleware;
