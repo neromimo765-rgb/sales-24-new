@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { registerValidationRules, loginValidationRules, validate } = require('../validators');
-const { protect } = require('../middleware');
+const { protect } = require('../middleware'); // تأكد أن ملف middleware/index.js يصدر { protect } بشكل صحيح
 const logger = require('../logger');
 
 const router = express.Router();
@@ -100,8 +100,15 @@ router.put('/update-profile', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
     }
 
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: 'البريد الإلكتروني مستخدم بالفعل من قبل حساب آخر' });
+      }
+      user.email = email;
+    }
+
     if (name) user.name = name;
-    if (email) user.email = email;
 
     await user.save();
 
@@ -113,6 +120,36 @@ router.put('/update-profile', protect, async (req, res) => {
   } catch (error) {
     logger.error('خطأ في تحديث البيانات:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحديث' });
+  }
+});
+
+// 🚀 [مضاف حديثاً] تغيير كلمة المرور
+router.put('/change-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال كلمة المرور الحالية والجديدة' });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+
+    // التحقق من صحة كلمة المرور الحالية
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'كلمة المرور الحالية غير صحيحة' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+  } catch (error) {
+    logger.error('خطأ في تغيير كلمة المرور:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تغيير كلمة المرور' });
   }
 });
 
