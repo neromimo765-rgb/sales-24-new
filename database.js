@@ -33,39 +33,38 @@ const connectDB = async () => {
     logger.info(`✅ MongoDB متصل بنجاح: ${conn.connection.host} (${conn.connection.name})`);
     console.log(`✅ MongoDB متصل بنجاح على المضيف: ${conn.connection.host}`);
 
-    // ==========================================
-    // 📊 مراقبة أحداث الاتصال وإدارة الأخطاء
-    // ==========================================
-
-    mongoose.connection.on('error', (err) => {
-      isConnected = false;
-      logger.error('❌ خطأ في اتصال MongoDB:', err.message);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      isConnected = false;
-      logger.warn('⚠️ تم انقطاع الاتصال بـ MongoDB - جاري مراقبة الحالة...');
-      
-      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        reconnectAttempts++;
-        logger.info(`🔄 محاولة إعادة الاتصال رقم (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-      } else {
-        logger.error('❌ تم تجاوز الحد الأقصى لمحاولات إعادة الاتصال بـ MongoDB.');
-      }
-    });
-
-    mongoose.connection.on('reconnected', () => {
-      isConnected = true;
-      reconnectAttempts = 0;
-      logger.info('🔄 تمت استعادة الاتصال بـ MongoDB بنجاح.');
-    });
-
   } catch (error) {
     isConnected = false;
     logger.warn('⚠️ تعذر الاتصال بقاعدة البيانات MongoDB - النظام يعمل في وضع الأمان الذاتي (Standalone Mode):', error.message);
     console.log('⚠️ ملاحظة: يعمل النظام بكفاءة ذاتية بدون قاعدة بيانات.');
   }
 };
+
+// ==========================================
+// 📊 مراقبة أحداث الاتصال وإدارة الأخطاء
+// ==========================================
+mongoose.connection.on('error', (err) => {
+  isConnected = false;
+  logger.error('❌ خطأ في اتصال MongoDB:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  isConnected = false;
+  logger.warn('⚠️ تم انقطاع الاتصال بـ MongoDB - جاري مراقبة الحالة...');
+  
+  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    reconnectAttempts++;
+    logger.info(`🔄 محاولة إعادة الاتصال رقم (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+  } else {
+    logger.error('❌ تم تجاوز الحد الأقصى لمحاولات إعادة الاتصال بـ MongoDB.');
+  }
+});
+
+mongoose.connection.on('reconnected', () => {
+  isConnected = true;
+  reconnectAttempts = 0;
+  logger.info('🔄 تمت استعادة الاتصال بـ MongoDB بنجاح.');
+});
 
 /**
  * دالة مساعدة لفحص حالة اتصال قاعدة البيانات (تفيد في الـ Health Check Endpoints)
