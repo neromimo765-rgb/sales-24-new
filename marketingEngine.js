@@ -27,7 +27,7 @@ function validateNumber(value, min, max, name) {
   return n;
 }
 
-// ---------- قاعدة بيانات الأنماط التسويقية (موسعة) ----------
+// ---------- قاعدة بيانات الأنماط التسويقية (موسعة حسب السوق) ----------
 
 const MARKET_DATABASE = {
   default: {
@@ -36,7 +36,8 @@ const MARKET_DATABASE = {
       "فيديو قصير (Reels/TikTok) يوضح قبل وبعد",
       "إعلان صورة احترافي مع آراء العملاء"
     ],
-    targetHook: "هل تعاني من هذه المشكلة المتكررة؟ إليك الحل النهائي!"
+    targetHookEgypt: "هل تعاني من هذه المشكلة المتكررة؟ إليك الحل النهائي!",
+    targetHookSaudi: "تعاني من هالمشكلة وتبغي الحل الأكيد؟ إليك الخلاصة!"
   },
   electronics: {
     strategy: "إبراز المواصفات الفنية والعمر الطويل مع فيديو تجريبي حقيقي (Unboxing).",
@@ -44,7 +45,8 @@ const MARKET_DATABASE = {
       "فيديو Unboxing قريب للكاميرا",
       "فيديو مقارنة قبل/بعد"
     ],
-    targetHook: "أغلب الناس بتشتري صح؟ جرّب الأقوى تقنياً!"
+    targetHookEgypt: "أغلب الناس بتشتري صح؟ جرّب الأقوى تقنياً!",
+    targetHookSaudi: "تبي الأداء الأقوى والجودة اللي تعيش معك؟ لا تفوتك التقنية هذي!"
   },
   beauty: {
     strategy: "التأكيد على الأمان والنتيجة الظاهرة بآراء حقيقية قبل/بعد الاستخدام.",
@@ -52,7 +54,8 @@ const MARKET_DATABASE = {
       "فيديو تجربة حقيقية على الوجه/البشرة",
       "مراجعة من مؤثرة موثوقة"
     ],
-    targetHook: "نتايج حقيقية تبان من أول أسبوع — شوف بنفسك!"
+    targetHookEgypt: "نتايج حقيقية تبان من أول أسبوع — شوف بنفسك!",
+    targetHookSaudi: "نتائج مضمونة وتبان من أول استخدام — شوفي بنفسك النقاء والجمال!"
   },
   home: {
     strategy: "إظهار سهولة الاستخدام وتوفير الوقت والجهد في الحياة اليومية.",
@@ -60,7 +63,8 @@ const MARKET_DATABASE = {
       "فيديو تعريفي سريع بالاستخدام",
       "قبل/بعد ترتيب المنزل"
     ],
-    targetHook: "توفير وقتك وجهدك في دقيقة واحدة يومياً!"
+    targetHookEgypt: "توفير وقتك وجهدك في دقيقة واحدة يومياً!",
+    targetHookSaudi: "وفّر وقتك وجهدك في ثوانٍ معدودة — ريح بيتك بكل سهولة!"
   },
   fashion: {
     strategy: "التركيز على الشياكة، جودة الخامات، وملاءمة الموضة الحالية.",
@@ -68,7 +72,8 @@ const MARKET_DATABASE = {
       "فيديو عرض أزياء (Outfit Transition)",
       "تنسيق إطلالات مختلفة بقطعة واحدة"
     ],
-    targetHook: "لوك العيد أو الخروجة وصل! خلي إطلالتك خطف للأضواء."
+    targetHookEgypt: "لوك العيد أو الخروجة وصل! خلي إطلالتك خطف للأضواء.",
+    targetHookSaudi: "إطلالتك المميزة وصلت! كن محط الأنظار في كل مناسبة."
   }
 };
 
@@ -77,9 +82,9 @@ function getMarketingPlan(category) {
   return MARKET_DATABASE[key] || MARKET_DATABASE.default;
 }
 
-// ---------- التحليل والخطة (المحدثة) ----------
+// ---------- التحليل والخطة (المحدثة لتشمل السوق المستهدف: مصر أو السعودية) ----------
 
-function analyzeProductAndPlan(productName, category, platform = 'general') {
+function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', platform = 'general') {
   if (!productName || typeof productName !== 'string' || !productName.trim()) {
     throw new Error('برجاء إدخال اسم المنتج أولاً!');
   }
@@ -87,8 +92,16 @@ function analyzeProductAndPlan(productName, category, platform = 'general') {
   const cleanName = cleanText(productName, 60);
   const plan = getMarketingPlan(category);
   const slug = toHashtagSlug(cleanName);
+  
+  // تحديد اللهجة والسوق (مصر أو السعودية)
+  const isSaudi = targetMarket === 'saudi';
+  const marketName = isSaudi ? 'المملكة العربية السعودية 🇸🇦' : 'جمهورية مصر العربية 🇪🇬';
+  const currency = isSaudi ? 'ريال سعودي' : 'جنيه مصري';
+  
+  const targetHook = isSaudi ? plan.targetHookSaudi : plan.targetHookEgypt;
+  
   const categoryLabel = category && category !== 'default'
-    ? `للمنتجات من فئة "${category}"`
+    ? `للمنتجات الفاخرة من فئة "${category}"`
     : 'لمختلف فئات المنتجات';
 
   const platformTarget = platform === 'tiktok' 
@@ -97,17 +110,22 @@ function analyzeProductAndPlan(productName, category, platform = 'general') {
     ? 'مخصص لجمهور فيسبوك المهتم بالتفاصيل والعروض' 
     : 'خطة تسويقية شاملة لكافة المنصات';
 
+  const scriptText = isSaudi 
+    ? `مع "${cleanName}" بتنتهي المشكلة نهائياً من أول استخدام. جودة عالية وتناسب ذوقك الرفيع ${categoryLabel}. لا تفوت الفرصة واطلبها الحين قبل نفاد الكمية والتوصيل لحد باب البيت!`
+    : `مع "${cleanName}" هتنتهي المشكلة تماماً من أول استخدام. جودة عالية وسعر تنافسي ${categoryLabel}. متخليش الفرصة تفوتك وابعتلنا فوراً لاغتنام العرض والشحن لحد باب البيت.`;
+
   return {
     product: cleanName,
+    market: marketName,
     platform: platformTarget,
-    status: "خطة تسويقية جاهزة ومحترفة 🚀",
+    status: "خطة تسويقية ذكية جاهزة ومخصصة للسوق المستهدف 🚀",
     marketResearch: {
-      searchSummary: `تم تحليل السوق محلياً للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 8 إلى 11 مساءً.`,
+      searchSummary: `تم تحليل السوق في ${marketName} للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 7 إلى 11 مساءً.`,
       baseStrategy: plan.strategy,
       bestFormats: plan.bestFormats,
-      targetAudience: "فئة المستهلكين المهتمين بحلول الجودة السريعة (18-45 سنة).",
-      pricingAdvice: "سعر تنافسي مع عرض (اشتري قطعة والثانية هدية أو شحن مجاني).",
-      disclaimer: "ملاحظة: هذا تحليل متقدم مدعوم بالقوالب الذكية لإدارة الحملات بفاعلية."
+      targetAudience: isSaudi ? "فئة المستهلكين في السعودية المهتمين بالحلول السريعة والجودة العالية (18-45 سنة)." : "فئة المستهلكين في مصر المهتمين بالحلول العملية والعروض القوية (18-45 سنة).",
+      pricingAdvice: `سعر تنافسي مدعوم بالـ ${currency} مع عرض خاص (شحن مجاني أو خصم لفترة محدودة).`,
+      disclaimer: "ملاحظة: هذا تحليل متقدم مدعوم بالقوالب الذكية لإدارة الحملات بفاعلية وتوجيه اللهجة."
     },
     adFormats: [
       {
@@ -122,10 +140,10 @@ function analyzeProductAndPlan(productName, category, platform = 'general') {
       }
     ],
     contentPackage: {
-      hook: plan.targetHook + ` لو دورت كتير ومش لاقي حل لـ "${cleanName}"، فالفيديو ده عشانك انت!`,
-      script: `مع "${cleanName}" هتنتهي المشكلة تماماً من أول استخدام. جودة عالية وسعر تنافسي ${categoryLabel}. متخليش الفرصة تفوتك وابعتلنا فوراً لاغتنام العرض.`,
-      cta: "اطلب نسختك دلوقتي واغتنم عرض اليوم المحدود!",
-      hashtags: `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
+      hook: targetHook + ` لو دورت كتير ومش لاقي حل لـ "${cleanName}"، فالفيديو ده عشانك أنت!`,
+      script: scriptText,
+      cta: isSaudi ? "اطلب نسختك الحين واستفيد من عرض اليوم!" : "اطلب نسختك دلوقتي واغتنم عرض اليوم المحدود!",
+      hashtags: isSaudi ? `#Sales24 #تسويق_إلكتروني #${slug} #عروض_السعودية #متجر_ترند` : `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
       suggestedMusic: "موسيقى تحفيزية سريعة (Upbeat Commercial Beat) لخلق حماس الشراء."
     }
   };
