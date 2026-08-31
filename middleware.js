@@ -1,11 +1,43 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية المُحدثة)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User'); // تأكد من صحة مسار نموذج المستخدم
 const logger = require('./logger');
+
+// تخزين مؤقت بسيط في الذاكرة (Memory Cache)
+const cacheStore = new Map();
+
+// 🚀 [مضاف حديثاً] دالة التخزين المؤقت (Cache Middleware) لحل مشكلة campaigns.js
+function cacheMiddleware(durationInSeconds = 60) {
+  return (req, res, next) => {
+    // تخطي الـ Cache إذا لم تكن طلبات GET
+    if (req.method !== 'GET') {
+      return next();
+    }
+
+    const key = `cache_${req.originalUrl || req.url}`;
+    const cachedResponse = cacheStore.get(key);
+
+    if (cachedResponse && cachedResponse.expiry > Date.now()) {
+      return res.json(cachedResponse.data);
+    }
+
+    // حفظ النسخة الأصلية من res.json لاعتراض البيانات وتخزينها
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      cacheStore.set(key, {
+        data: body,
+        expiry: Date.now() + durationInSeconds * 1000
+      });
+      return originalJson(body);
+    };
+
+    next();
+  };
+}
 
 // إضافة Request ID لكل طلب للتتبع الدقيق
 function requestId(req, res, next) {
@@ -137,6 +169,7 @@ function globalErrorHandler(err, req, res, next) {
 }
 
 module.exports = {
+  cacheMiddleware, // تمت الإضافة هنا بنجاح
   requestId,
   protect,
   requestLogger,
