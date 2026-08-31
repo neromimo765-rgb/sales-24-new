@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية الآمنة بالكامل)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النهائية المطورة)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
@@ -45,16 +45,27 @@ function cacheMiddleware(durationInSeconds = 60) {
   };
 }
 
-// 2️⃣ حماية ضد الإغراق (Local Rate Limiter) بدون الحاجة لحزم خارجية معقدة
+// 2️⃣ حماية ضد الإغراق (Local Rate Limiter) مع تنظيف دوري للذاكرة لمنع التسريب
 const requestCounts = new Map();
-// تنظيف الذاكرة كل دقيقة لمنع تراكم الـ IP القديمة
-setInterval(() => {
-  requestCounts.clear();
-}, 60 * 1000);
+const CLEANUP_INTERVAL = 10 * 60 * 1000; // تنظيف كل 10 دقائق
 
-function localRateLimiter(maxRequests = 100, windowMs = 60 * 1000) {
+const cleanupIntervalId = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of requestCounts.entries()) {
+    if (now - data.startTime > 15 * 60 * 1000) {
+      requestCounts.delete(ip);
+    }
+  }
+}, CLEANUP_INTERVAL);
+
+// منع الـ Interval من منع السيرفر من إيقاف التشغيل بأمان (Graceful Shutdown)
+if (cleanupIntervalId.unref) {
+  cleanupIntervalId.unref();
+}
+
+function localRateLimiter(maxRequests = 120, windowMs = 60 * 1000) {
   return (req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress;
+    const ip = req.ip || req.socket.remoteAddress || 'unknown_ip';
     const current = requestCounts.get(ip) || { count: 0, startTime: Date.now() };
 
     if (Date.now() - current.startTime > windowMs) {
@@ -67,10 +78,11 @@ function localRateLimiter(maxRequests = 100, windowMs = 60 * 1000) {
     requestCounts.set(ip, current);
 
     if (current.count > maxRequests) {
+      logger.warn('تم تجاوز حد الطلبات المسموح به (Rate Limit Exceeded)', { ip, url: req.originalUrl });
       return res.status(429).json({
         success: false,
         message: 'لقد تجاوزت الحد الأقصى للطلبات، يرجى المحاولة لاحقاً ⏳',
-        requestId: req.id
+        requestId: req.id || 'N/A'
       });
     }
 
@@ -80,7 +92,7 @@ function localRateLimiter(maxRequests = 100, windowMs = 60 * 1000) {
 
 // 3️⃣ إضافة Request ID لكل طلب للتتبع والدقة في اللوجات
 function requestId(req, res, next) {
-  req.id = uuidv4();
+  req.id = req.headers['x-request-id'] || uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
 }
@@ -111,14 +123,14 @@ function notFoundHandler(req, res) {
     success: false,
     message: 'المسار المطلوب غير موجود على السيرفر ❌',
     path: req.originalUrl,
-    requestId: req.id
+    requestId: req.id || 'N/A'
   });
 }
 
 // 6️⃣ معالج الأخطاء العام والشامل (500 وأخطاء النظام)
 function globalErrorHandler(err, req, res, next) {
   logger.error('حدث خطأ غير متوقع في السيرفر', {
-    requestId: req.id,
+    requestId: req.id || 'N/A',
     error: err.message,
     stack: err.stack,
     url: req.originalUrl,
@@ -129,7 +141,7 @@ function globalErrorHandler(err, req, res, next) {
     return res.status(400).json({
       success: false,
       message: 'البيانات المرسلة غير صالحة (صيغة JSON غير صحيحة)',
-      requestId: req.id
+      requestId: req.id || 'N/A'
     });
   }
 
@@ -137,15 +149,15 @@ function globalErrorHandler(err, req, res, next) {
     return res.status(413).json({
       success: false,
       message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 10MB)',
-      requestId: req.id
+      requestId: req.id || 'N/A'
     });
   }
 
-  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+  if, (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
       message: 'نوع الملف المرسل غير مسموح به',
-      requestId: req.id
+      requestId: req.id || 'N/A'
     });
   }
 
@@ -154,7 +166,7 @@ function globalErrorHandler(err, req, res, next) {
     message: process.env.NODE_ENV === 'production'
       ? 'حدث خطأ داخلي في الخادم، يرجى المحاولة لاحقاً'
       : err.message,
-    requestId: req.id
+    requestId: req.id || 'N/A'
   });
 }
 
