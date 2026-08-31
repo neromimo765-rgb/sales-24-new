@@ -1,5 +1,5 @@
 /**
- * محرك توليد السكريبتات التسويقية - النسخة النووية الصاروخية 🚀
+ * محرك توليد السكريبتات التسويقية - النسخة النووية المطورة 🚀
  * تفعيل الذاكرة المؤقتة الذكية (In-Memory Caching) وتوسيع محركات الإبداع.
  */
 
@@ -54,9 +54,9 @@ function pick(arr) {
  * @param {object} input - { productName, targetAudience, price }
  * @returns {object} بيانات السكريبت المنظفة
  */
-function generate(input) {
-  // تنظيف المدخلات
-  const product = cleanText(input.productName, 60);
+function generate(input = {}) {
+  // تنظيف المدخلات مع حماية من القيم الفارغة
+  const product = cleanText(input.productName || 'منتج مميز', 60);
   const price = cleanText(input.price || 'سعر تنافسي', 30);
   const audience = cleanText(input.targetAudience || 'الجمهور المستهدف', 80);
 
@@ -84,14 +84,43 @@ function generate(input) {
 
   const result = { product, price, audience, hook, body, cta, hashtags };
 
-  // تخزين النتيجة في الكاش (مع التحقق من عدم تخطي الحجم الأقصى للذاكرة)
+  // تخزين النتيجة في الكاش (مع التحقق من عدم تخطي الحجم الأقصى للذاكرة بأمان)
   if (scriptCache.size >= MAX_CACHE_SIZE) {
-    const firstKey = scriptCache.keys().next().value;
-    scriptCache.delete(firstKey);
+    const oldestKey = scriptCache.keys().next().value;
+    scriptCache.delete(oldestKey);
   }
   scriptCache.set(cacheKey, result);
 
   return result;
 }
 
-module.exports = { generate };
+/**
+ * إضافة جديدة: توليد السكريبت في قالب نصي واحد جاهز للنشر مباشرة 📋
+ */
+function generateFormatted(input) {
+  const script = generate(input);
+  return `
+${script.hook}
+
+${script.body}
+
+${script.cta}
+
+👇 للتواصل والاستفسار:
+${script.hashtags}
+  `.trim();
+}
+
+/**
+ * إضافة جديدة: مسح الذاكرة المؤقتة عند الحاجة لتفريغ الرام
+ */
+function clearCache() {
+  scriptCache.clear();
+  return { success: true, message: 'تم تفريغ ذاكرة التخزين المؤقت بنجاح 🧹' };
+}
+
+module.exports = { 
+  generate, 
+  generateFormatted, 
+  clearCache 
+};
