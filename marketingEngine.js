@@ -1,5 +1,5 @@
 // =====================================================================
-// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية)
+// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية المطورة)
 // =====================================================================
 
 // ---------- دوال معالجة ونصوص محلية ----------
@@ -27,7 +27,7 @@ function validateNumber(value, min, max, name) {
   return n;
 }
 
-// ---------- قاعدة بيانات الأنماط التسويقية ----------
+// ---------- قاعدة بيانات الأنماط التسويقية (موسعة) ----------
 
 const MARKET_DATABASE = {
   default: {
@@ -61,6 +61,14 @@ const MARKET_DATABASE = {
       "قبل/بعد ترتيب المنزل"
     ],
     targetHook: "توفير وقتك وجهدك في دقيقة واحدة يومياً!"
+  },
+  fashion: {
+    strategy: "التركيز على الشياكة، جودة الخامات، وملاءمة الموضة الحالية.",
+    bestFormats: [
+      "فيديو عرض أزياء (Outfit Transition)",
+      "تنسيق إطلالات مختلفة بقطعة واحدة"
+    ],
+    targetHook: "لوك العيد أو الخروجة وصل! خلي إطلالتك خطف للأضواء."
   }
 };
 
@@ -69,9 +77,9 @@ function getMarketingPlan(category) {
   return MARKET_DATABASE[key] || MARKET_DATABASE.default;
 }
 
-// ---------- التحليل والخطة ----------
+// ---------- التحليل والخطة (المحدثة) ----------
 
-function analyzeProductAndPlan(productName, category) {
+function analyzeProductAndPlan(productName, category, platform = 'general') {
   if (!productName || typeof productName !== 'string' || !productName.trim()) {
     throw new Error('برجاء إدخال اسم المنتج أولاً!');
   }
@@ -83,16 +91,23 @@ function analyzeProductAndPlan(productName, category) {
     ? `للمنتجات من فئة "${category}"`
     : 'لمختلف فئات المنتجات';
 
+  const platformTarget = platform === 'tiktok' 
+    ? 'مخصص لجمهور تيك توك السريع (إيقاع سريع وإبهار بصري)' 
+    : platform === 'facebook' 
+    ? 'مخصص لجمهور فيسبوك المهتم بالتفاصيل والعروض' 
+    : 'خطة تسويقية شاملة لكافة المنصات';
+
   return {
     product: cleanName,
-    status: "خطة تسويقية جاهزة (مبنية على قالب عام ومحرك ذكي) 🚀",
+    platform: platformTarget,
+    status: "خطة تسويقية جاهزة ومحترفة 🚀",
     marketResearch: {
       searchSummary: `تم تحليل السوق محلياً للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 8 إلى 11 مساءً.`,
       baseStrategy: plan.strategy,
       bestFormats: plan.bestFormats,
       targetAudience: "فئة المستهلكين المهتمين بحلول الجودة السريعة (18-45 سنة).",
       pricingAdvice: "سعر تنافسي مع عرض (اشتري قطعة والثانية هدية أو شحن مجاني).",
-      disclaimer: "ملاحظة: هذا تحليل عام جاهز من القوالب، ويُعَد كأداة مساعدة قوية لإدارة الحملات."
+      disclaimer: "ملاحظة: هذا تحليل متقدم مدعوم بالقوالب الذكية لإدارة الحملات بفاعلية."
     },
     adFormats: [
       {
@@ -113,6 +128,26 @@ function analyzeProductAndPlan(productName, category) {
       hashtags: `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
       suggestedMusic: "موسيقى تحفيزية سريعة (Upbeat Commercial Beat) لخلق حماس الشراء."
     }
+  };
+}
+
+// ---------- إضافة جديدة: حاسبة تقدير الميزانية للحملات ----------
+
+function estimateAdsBudget(dailyBudget, expectedCPA = 50) {
+  const budget = validateNumber(dailyBudget, 1, 100000, 'dailyBudget');
+  const cpa = validateNumber(expectedCPA, 1, 10000, 'expectedCPA');
+
+  const estimatedConversionsPerDay = Math.floor(budget / cpa);
+  const estimatedWeeklyConversions = estimatedConversionsPerDay * 7;
+
+  return {
+    dailyBudget: budget,
+    expectedCostPerAcquisition: cpa,
+    estimatedConversionsPerDay,
+    estimatedWeeklyConversions,
+    recommendation: estimatedConversionsPerDay > 0 
+      ? `🟢 ميزانية جيدة متوقعة لتحقيق حوالي ${estimatedConversionsPerDay} طلبات يومياً.`
+      : `⚠️ الميزانية اليومية منخفضة مقارنة بتكلفة الاستحواذ المستهدفة (CPA).`
   };
 }
 
@@ -166,4 +201,10 @@ function evaluateMediaQuality(mediaType, resolution, lightingScore) {
   };
 }
 
-module.exports = { analyzeProductAndPlan, evaluateMediaQuality, getMarketingPlan, parseResolution };
+module.exports = { 
+  analyzeProductAndPlan, 
+  evaluateMediaQuality, 
+  getMarketingPlan, 
+  parseResolution, 
+  estimateAdsBudget 
+};
