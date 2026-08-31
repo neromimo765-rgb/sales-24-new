@@ -1,5 +1,5 @@
 # =====================================================================
-# 🚀 Sales 24 Pro - Git Ignore Configuration (النسخة النووية المطورة والنهائية)
+# 🚀 Sales 24 Pro - Git Ignore Configuration (النسخة المحلية المطورة والنهائية)
 # =====================================================================
 
 # 📦 Dependencies (الحزم والتبعيات)
@@ -95,10 +95,9 @@ build/
 Dockerfile.local
 docker-compose.override.yml
 
-# 📊 Database Local Dumps & Backups (نسخ احتياطية محلية لقواعد البيانات إن وجدت)
-*.sql
+# 📊 Database & Local Storage Backups (النسخ الاحتياطية المحلية وملفات JSON)
 *.sqlite
 *.sqlite3
 data/*.db
-data/*.json
-!data/seed.json
+# استثناء ملفات النسخ الاحتياطي الخاصة بالمتصفح ليسمح برفعها أو تتبعها إذا رغبت
+!sales24-backup-*.json
