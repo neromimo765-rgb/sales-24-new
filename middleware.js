@@ -1,10 +1,8 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية النهائية والمؤمنة)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (نسخة التخزين المحلي)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
-const jwt = require('jsonwebtoken');
-const User = require('./models/User'); // تأكد من صحة مسار نموذج المستخدم
 const logger = require('./logger');
 
 // تخزين مؤقت متطور في الذاكرة مع نظام حماية للذاكرة (Memory Guard)
@@ -38,7 +36,7 @@ function cacheMiddleware(durationInSeconds = 60) {
     // حفظ النسخة الأصلية من res.json لاعتراض البيانات وتخزينها
     const originalJson = res.json.bind(res);
     res.json = (body) => {
-      // إدارة حجم الكاش لمنع امتلاء الذاكرة (LRU بسيط: حذف أقدم عنصر لو وصل للحد الأقصى)
+      // إدارة حجم الكاش لمنع امتلاء الذاكرة
       if (cacheStore.size >= MAX_CACHE_SIZE) {
         const firstKey = cacheStore.keys().next().value;
         cacheStore.delete(firstKey);
@@ -56,56 +54,11 @@ function cacheMiddleware(durationInSeconds = 60) {
   };
 }
 
-// 🆔 إضافة Request ID لكل طلب للتتبع والدقيق في اللوجات
+// 🆔 إضافة Request ID لكل طلب للتتبع والدقة في اللوجات
 function requestId(req, res, next) {
   req.id = uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
-}
-
-// 🔒 حماية المسارات والتحقق من التوكن (JWT)
-async function protect(req, res, next) {
-  try {
-    let token;
-
-    // التحقق من وجود التوكن في الـ Headers (Bearer) أو الـ Cookies
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'غير مسموح لك بالوصول، يرجى تسجيل الدخول أولاً 🚫',
-        requestId: req.id
-      });
-    }
-
-    // فك تشفير التوكن والتحقق منه سرياً
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // التحقق من أن المستخدم ما زال موجوداً في قاعدة البيانات ولم يتم حذفه
-    const currentUser = await User.findById(decoded.id).lean();
-    if (!currentUser) {
-      return res.status(401).json({
-        success: false,
-        message: 'المستخدم المرتبط بهذا التوكن لم يعد موجوداً',
-        requestId: req.id
-      });
-    }
-
-    // إرفاق بيانات المستخدم بالطلب للاستخدام اللاحق
-    req.user = currentUser;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'التوكن غير صالح أو انتهت صلاحيته',
-      requestId: req.id
-    });
-  }
 }
 
 // 📊 تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
@@ -161,7 +114,7 @@ function globalErrorHandler(err, req, res, next) {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 50MB)',
+      message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 10MB)',
       requestId: req.id
     });
   }
@@ -175,7 +128,7 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل (Production vs Development)
+  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل
   res.status(err.status || 500).json({
     success: false,
     message: process.env.NODE_ENV === 'production'
@@ -188,7 +141,6 @@ function globalErrorHandler(err, req, res, next) {
 module.exports = {
   cacheMiddleware,
   requestId,
-  protect,
   requestLogger,
   notFoundHandler,
   globalErrorHandler
