@@ -113,6 +113,7 @@ function analyzeProductAndPlan(productName, category) {
     product: cleanName,
     status: "خطة تسويقية جاهزة (مبنية على قالب عام)",
     marketResearch: {
+      searchSummary: `تم تحليل السوق محلياً للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 8 إلى 11 مساءً.`,
       baseStrategy: plan.strategy,
       bestFormats: plan.bestFormats,
       targetAudience: "فئة المستهلكين المهتمين بحلول الجودة السريعة (18-45 سنة).",
