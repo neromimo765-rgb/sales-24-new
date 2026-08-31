@@ -1,21 +1,16 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (نسخة التخزين المحلي)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية الآمنة بالكامل)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
 
-// تخزين مؤقت متطور في الذاكرة مع نظام حماية للذاكرة (Memory Guard)
+// 1️⃣ تخزين مؤقت متطور للـ Cache مع حماية الذاكرة (Memory Guard)
 const cacheStore = new Map();
-const MAX_CACHE_SIZE = 500; // أقصى عدد عناصر مخزنة لتجنب استهلاك الذاكرة
+const MAX_CACHE_SIZE = 500;
 
-/**
- * 🚀 دالة التخزين المؤقت (Cache Middleware) مع تنظيف تلقائي للذاكرة
- * @param {number} durationInSeconds - مدة الصلاحية بالثواني
- */
 function cacheMiddleware(durationInSeconds = 60) {
   return (req, res, next) => {
-    // تخطي الـ Cache تماماً إذا لم تكن طلبات GET
     if (req.method !== 'GET') {
       return next();
     }
@@ -23,20 +18,16 @@ function cacheMiddleware(durationInSeconds = 60) {
     const key = `cache_${req.originalUrl || req.url}`;
     const cachedResponse = cacheStore.get(key);
 
-    // التحقق من صلاحية الكاش
     if (cachedResponse && cachedResponse.expiry > Date.now()) {
       return res.json(cachedResponse.data);
     }
 
-    // إذا انتهت صلاحيته، احذفه لتوفير الذاكرة
     if (cachedResponse) {
       cacheStore.delete(key);
     }
 
-    // حفظ النسخة الأصلية من res.json لاعتراض البيانات وتخزينها
     const originalJson = res.json.bind(res);
     res.json = (body) => {
-      // إدارة حجم الكاش لمنع امتلاء الذاكرة
       if (cacheStore.size >= MAX_CACHE_SIZE) {
         const firstKey = cacheStore.keys().next().value;
         cacheStore.delete(firstKey);
@@ -54,14 +45,47 @@ function cacheMiddleware(durationInSeconds = 60) {
   };
 }
 
-// 🆔 إضافة Request ID لكل طلب للتتبع والدقة في اللوجات
+// 2️⃣ حماية ضد الإغراق (Local Rate Limiter) بدون الحاجة لحزم خارجية معقدة
+const requestCounts = new Map();
+// تنظيف الذاكرة كل دقيقة لمنع تراكم الـ IP القديمة
+setInterval(() => {
+  requestCounts.clear();
+}, 60 * 1000);
+
+function localRateLimiter(maxRequests = 100, windowMs = 60 * 1000) {
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const current = requestCounts.get(ip) || { count: 0, startTime: Date.now() };
+
+    if (Date.now() - current.startTime > windowMs) {
+      current.count = 1;
+      current.startTime = Date.now();
+    } else {
+      current.count++;
+    }
+
+    requestCounts.set(ip, current);
+
+    if (current.count > maxRequests) {
+      return res.status(429).json({
+        success: false,
+        message: 'لقد تجاوزت الحد الأقصى للطلبات، يرجى المحاولة لاحقاً ⏳',
+        requestId: req.id
+      });
+    }
+
+    next();
+  };
+}
+
+// 3️⃣ إضافة Request ID لكل طلب للتتبع والدقة في اللوجات
 function requestId(req, res, next) {
   req.id = uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
 }
 
-// 📊 تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
+// 4️⃣ تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
 function requestLogger(req, res, next) {
   const start = Date.now();
 
@@ -81,7 +105,7 @@ function requestLogger(req, res, next) {
   next();
 }
 
-// ❌ معالج المسارات غير الموجودة (404)
+// 5️⃣ معالج المسارات غير الموجودة (404)
 function notFoundHandler(req, res) {
   res.status(404).json({
     success: false,
@@ -91,7 +115,7 @@ function notFoundHandler(req, res) {
   });
 }
 
-// ⚠️ معالج الأخطاء العام والشامل (500 وأخطاء النظام)
+// 6️⃣ معالج الأخطاء العام والشامل (500 وأخطاء النظام)
 function globalErrorHandler(err, req, res, next) {
   logger.error('حدث خطأ غير متوقع في السيرفر', {
     requestId: req.id,
@@ -101,7 +125,6 @@ function globalErrorHandler(err, req, res, next) {
     method: req.method
   });
 
-  // معالجة أخطاء تحليل البيانات (JSON parsing error)
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({
       success: false,
@@ -110,7 +133,6 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  // معالجة أخطاء حجم الملفات الكبيرة
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
@@ -119,7 +141,6 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  // معالجة أخطاء صيغ الملفات غير المسموحة
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
@@ -128,7 +149,6 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل
   res.status(err.status || 500).json({
     success: false,
     message: process.env.NODE_ENV === 'production'
@@ -140,6 +160,7 @@ function globalErrorHandler(err, req, res, next) {
 
 module.exports = {
   cacheMiddleware,
+  localRateLimiter,
   requestId,
   requestLogger,
   notFoundHandler,
