@@ -1,6 +1,6 @@
 /**
  * =====================================================================
- * ✍️ scriptGenerator.js - محرك توليد السكريبتات التسويقية (النسخة النووية المطورة)
+ * ✍️ scriptGenerator.js - محرك توليد السكريبتات التسويقية (النسخة النووية المطورة والنهائية)
  * تفعيل الذاكرة المؤقتة الذكية، خوارزمية منع التكرار، ودعم اللهجات المتقدمة.
  * =====================================================================
  */
@@ -28,6 +28,10 @@ const HOOKS = {
     (p) => `⚡ استنى يا الغالي! ناس كتير بتلف ومش بتلاقي النتيجة الصح — بس إنت لقيتها هنا في «${p}».`,
     (p) => `🎯 أقوى عرض وصل السعودية اليوم لـ «${p}».. لا تفوّت الفرصة واغتنمها الآن!`
   ],
+  gulf: [
+    (p) => `🔥 يا هلا والله! لو تبحث عن الجودة الحقيقية والنتيجة المضمونة لـ «${p}», فهذا العرض موجه لك خصيصاً!`,
+    (p) => `⚡ لا تفوت الفرصة! أفضل خيار متوفر حالياً في الخليج لـ «${p}» وصل عندنا وبأفضل سعر.`
+  ],
   egypt: [
     (p) => `🔥 لحظة واحدة يا باشا! لو بتدور على حل نهائي ومجرب 100% لـ «${p}», فالفيديو ده ليك إنت بالذات!`,
     (p) => `🚀 هسيبك من اللي بيبيعك كلام فارغ، وأنا هديك الصافي: «${p}» اللي هيدمر المنافسة!`,
@@ -47,7 +51,9 @@ const BODIES = [
 
 const CTAS = [
   (p) => `💥 اطلب دلوقتي قبل نفاد الكمية، وابعتلنا رسالة بكلمة «${p}» عشان نحجز نسختك فوراً وبشحن سريع!`,
-  (p, market) => market === 'saudi' ? `🔥 عرض اليوم محدود جداً — كلمنا واتساب أو رسائل وخد «${p}» توصيل لحد باب البيت!` : `🔥 عرض اليوم محدود جداً — كلمنا حالا في رسالة وخد «${p}» قبل ما السعر يرجع للأصلي!`,
+  (p, market) => (market === 'saudi' || market === 'gulf' || market === 'uae') 
+    ? `🔥 عرض اليوم محدود جداً — كلمنا واتساب أو رسائل وخد «${p}» توصيل لحد باب البيت!` 
+    : `🔥 عرض اليوم محدود جداً — كلمنا حالا في رسالة وخد «${p}» قبل ما السعر يرجع للأصلي!`,
   (p) => `🚀 متخليش الفرصة تفوتك — ابعت «${p}» في رسالة وهنرد عليك فوراً بكل التفاصيل وسرعة التنفيذ!`
 ];
 
@@ -59,12 +65,16 @@ function pick(arr, ...args) {
 
 /**
  * يولد سكريبت تسويقي كامل ومخصص بسرعة الصاروخ مع كاش ذكي.
- * @param {object} input - { productName, targetAudience, price, market, tone }
+ * @param {object} input - { productName, product, targetAudience, price, market, tone }
  * @returns {object} بيانات السكريبت المنظفة
  */
 function generate(input = {}) {
-  const product = cleanText(input.productName || 'منتج مميز', 100);
-  const price = cleanText(input.price || 'سعر تنافسي', 50);
+  // دعم مرن لأسماء المتغيرات القادمة من الـ Frontend
+  const rawProductName = input.productName || input.product || 'منتج مميز';
+  const rawPrice = input.price || input.sellingPrice || 'سعر تنافسي';
+  
+  const product = cleanText(rawProductName, 100);
+  const price = cleanText(rawPrice, 50);
   const audience = cleanText(input.targetAudience || 'الجمهور المستهدف', 100);
   const market = cleanText(input.market || 'egypt', 20).toLowerCase();
 
@@ -75,7 +85,7 @@ function generate(input = {}) {
     return scriptCache.get(cacheKey);
   }
 
-  // اختيار الخطاف بناءً على السوق (سعودي، مصري، أو عام) مع التراجع للاحتياطي
+  // اختيار الخطاف بناءً على السوق مع التراجع للاحتياطي
   const marketHooks = HOOKS[market] || HOOKS.general;
   const combinedHooks = [...marketHooks, ...HOOKS.general];
   
@@ -83,11 +93,17 @@ function generate(input = {}) {
   const body = pick(BODIES, product, price, audience);
   const cta = pick(CTAS, product, market);
 
+  // تحديد الهاشتاجات بناءً على السوق المستهدف
+  let marketTag = '#عروض_مصر';
+  if (market === 'saudi') marketTag = '#عروض_السعودية';
+  else if (market === 'uae') marketTag = '#عروض_الإمارات';
+  else if (market === 'gulf') marketTag = '#عروض_الخليج';
+
   const hashtags = [
     '#تسويق_إلكتروني',
     '#Sales24Pro',
     `#${toHashtagSlug(product)}`,
-    market === 'saudi' ? '#عروض_السعودية' : '#عروض_مصر',
+    marketTag,
     '#ترند_مبيعات',
     '#منتج_أصلي'
   ].join(' ');
