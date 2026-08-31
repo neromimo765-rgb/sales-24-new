@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية النهائية والمحدثة)
+// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية المطورة والنهائية)
 // =====================================================================
 const { body, validationResult } = require('express-validator');
 
@@ -34,11 +34,11 @@ const loginValidationRules = [
     .notEmpty().withMessage('كلمة المرور مطلوبة')
 ];
 
-// 🎯 قواعد التحقق للتحليل التسويقي والحملات (محدثة لتتطابق مع الواجهة وفئة المنظفات)
+// 🎯 قواعد التحقق للتحليل التسويقي والحملات وحاسبة الأرباح
 const marketingValidationRules = [
   body('productName')
+    .optional()
     .trim()
-    .notEmpty().withMessage('اسم المنتج مطلوب')
     .isLength({ min: 2, max: 200 }).withMessage('اسم المنتج يجب أن يكون بين 2 و 200 حرف')
     .escape(),
 
@@ -70,14 +70,31 @@ const marketingValidationRules = [
     .trim()
     .escape(),
 
-  body('price')
+  // دعم سعر البيع بصيغتي price و sellingPrice
+  body(['price', 'sellingPrice'])
     .optional()
     .isNumeric().withMessage('سعر البيع يجب أن يكون رقماً')
     .toFloat(),
 
-  body('cost')
+  // دعم التكلفة بصيغتي cost و costPrice
+  body(['cost', 'costPrice'])
     .optional()
     .isNumeric().withMessage('التكلفة يجب أن تكون رقماً')
+    .toFloat(),
+
+  body('quantity')
+    .optional()
+    .isInt({ min: 1 }).withMessage('الكمية يجب أن تكون رقماً صحيحاً أكبر من الصفر')
+    .toInt(),
+
+  body(['shippingCost', 'shipping'])
+    .optional()
+    .isNumeric().withMessage('تكلفة الشحن يجب أن تكون رقماً')
+    .toFloat(),
+
+  body(['adsCostPerUnit', 'ads'])
+    .optional()
+    .isNumeric().withMessage('تكلفة الإعلانات يجب أن تكون رقماً')
     .toFloat(),
 
   // ⚠️ تم إزالة escape() هنا حصراً لتجنب إفساد الروابط الحقيقية (URLs)
