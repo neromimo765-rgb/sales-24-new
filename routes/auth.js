@@ -80,9 +80,39 @@ router.post('/logout', (req, res) => {
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
     res.json({ success: true, user });
   } catch (error) {
+    logger.error('خطأ في جلب بيانات المستخدم:', error);
     res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
+  }
+});
+
+// تحديث بيانات المستخدم (إضافة مقترحة ومفيدة)
+router.put('/update-profile', protect, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'تم تحديث البيانات بنجاح',
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, plan: user.plan }
+    });
+  } catch (error) {
+    logger.error('خطأ في تحديث البيانات:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحديث' });
   }
 });
 
