@@ -1,5 +1,5 @@
 // =====================================================================
-// 👤 User.js - نموذج بيانات المستخدم (النسخة النووية النهائية)
+// 👤 User.js - نموذج بيانات المستخدم (النسخة النووية المطورة والنهائية)
 // =====================================================================
 
 const mongoose = require('mongoose');
@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
     lowercase: true, 
     index: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'يرجى إدخال بريد إلكتروني صالح']
+    // 🛠️ تعديل: تحسين تعبير التحقق من صحة البريد ليشمل النطاقات الحديثة
+    match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'يرجى إدخال بريد إلكتروني صالح']
   },
   password: { 
     type: String, 
@@ -34,7 +35,8 @@ const userSchema = new mongoose.Schema({
       values: ['user', 'admin', 'manager'],
       message: 'الدور الصلاحي غير صالح'
     }, 
-    default: 'user' 
+    default: 'user',
+    index: true // 🚀 إضافة فهرس لتحسين سرعة البحث حسب الصلاحية
   },
   avatar: { 
     type: String, 
@@ -59,9 +61,10 @@ const userSchema = new mongoose.Schema({
   },
   isActive: { 
     type: Boolean, 
-    default: true 
+    default: true,
+    index: true // 🚀 فهرس لتصفية المستخدمين النشطين بسرعة
   },
-  // 🔑 حقول استعادة كلمة المرور الجديدة
+  // 🔑 حقول استعادة كلمة المرور
   resetPasswordToken: {
     type: String,
     select: false
@@ -74,7 +77,23 @@ const userSchema = new mongoose.Schema({
     type: Date
   }
 }, {
-  timestamps: true // تفعيل createdAt و updatedAt تلقائياً من Mongoose
+  timestamps: true, // تفعيل createdAt و updatedAt تلقائياً
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// ==========================================
+// ⚡ Virtual Fields (حقول افتراضية محسوبة)
+// ==========================================
+
+// حظي أو اختصار الحرف الأول للاستخدام في الواجهات
+userSchema.virtual('initials').get(function() {
+  if (!this.name) return '';
+  const parts = this.name.trim().split(' ');
+  if (parts.length > 1) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return parts[0].substring(0, 2).toUpperCase();
 });
 
 // ==========================================
@@ -85,7 +104,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   try {
-    const salt = await bcrypt.genSalt(12); // قوة تشفير عالية وسريعة
+    const salt = await bcrypt.genSalt(12); // قوة تشفير عالية وآمنة
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -99,6 +118,7 @@ userSchema.pre('save', async function(next) {
 
 // 🔍 مقارنة كلمة المرور أثناء تسجيل الدخول
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  // ملاحظة: بما أن حقل الـ password محدد بـ select: false، تأكد من جلبه باستخدام .select('+password') في الاستعلام
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
@@ -108,7 +128,17 @@ userSchema.methods.toPublicJSON = function() {
   delete userObject.password;
   delete userObject.resetPasswordToken;
   delete userObject.resetPasswordExpire;
+  delete userObject.__v; // إزالة نسخة الإصدار للتنظيف
   return userObject;
+};
+
+// ==========================================
+// 🔍 دوال عامة للموديل (Static Methods)
+// ==========================================
+
+// البحث السريع عن مستخدم نشط بالبريد الإلكتروني مع جلب كلمة المرور المخفية
+userSchema.statics.findByEmailWithPassword = function(email) {
+  return this.findOne({ email: email.toLowerCase() }).select('+password');
 };
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);
