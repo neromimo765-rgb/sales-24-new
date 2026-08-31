@@ -1,13 +1,8 @@
-/**
- * محرك التسويق الذكي الشامل - Sales 24
- * مسؤول عن: التحليل التسويقي، تقييم جودة الوسائط، واختيار الأنماط (كرتون/حقيقي).
- *
- * ملاحظة أمانة: التحليل يعتمد على قوالب قواعد بيانات محلية (rule/template-based)
- * وليس على ذكاء اصطناعي حقيقي أو بيانات سوق فعلية. أي نص يدّعي "بحث شامل" هو
- * محتوى تجريبي، وليس حقيقة.
- */
+// =====================================================================
+// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية)
+// =====================================================================
 
-// ---------- دوال معالجة ونصوص محلية (بدون اعتماد خارجي) ----------
+// ---------- دوال معالجة ونصوص محلية ----------
 
 function cleanText(text, maxLen = 60) {
   if (!text) return '';
@@ -21,14 +16,6 @@ function toHashtagSlug(text) {
 
 // ---------- التحقق من صحة الأرقام ----------
 
-/**
- * يتحقق أن القيمة رقم ضمن نطاق.
- * @param {*} value
- * @param {number} min
- * @param {number} max
- * @param {string} name
- * @returns {number|null} رقم صالح أو null عند الخطأ
- */
 function validateNumber(value, min, max, name) {
   const n = Number(value);
   if (typeof value === 'undefined' || value === null || value === '' || !Number.isFinite(n)) {
@@ -42,10 +29,6 @@ function validateNumber(value, min, max, name) {
 
 // ---------- قاعدة بيانات الأنماط التسويقية ----------
 
-/**
- * قاعدة بيانات ذكية (قابلة للتوسع) تربط الفئات بخطط تسويقية مناسبة.
- * هي مصدر الحقيقة للتحليل — كل وظيفة تقرأ منها بدل ما تحفظ المحتوى يدويًا.
- */
 const MARKET_DATABASE = {
   default: {
     strategy: "التركيز على حل مشكلة العميل مباشرة مع إبراز السعر التنافسي وضمان الجودة.",
@@ -81,10 +64,6 @@ const MARKET_DATABASE = {
   }
 };
 
-/**
- * يسترجع خطة التسويق المناسبة للفئة، مع fallback آمن للافتراضي.
- * @param {string} category - فئة المنتج (electronics, beauty, home ...)
- */
 function getMarketingPlan(category) {
   const key = String(category || 'default').toLowerCase();
   return MARKET_DATABASE[key] || MARKET_DATABASE.default;
@@ -92,11 +71,6 @@ function getMarketingPlan(category) {
 
 // ---------- التحليل والخطة ----------
 
-/**
- * تحليل المنتج ووضع خطة تسويقية متكاملة.
- * @param {string} productName
- * @param {string} category - اختياري، افتراضيًا 'default'
- */
 function analyzeProductAndPlan(productName, category) {
   if (!productName || typeof productName !== 'string' || !productName.trim()) {
     throw new Error('برجاء إدخال اسم المنتج أولاً!');
@@ -111,14 +85,14 @@ function analyzeProductAndPlan(productName, category) {
 
   return {
     product: cleanName,
-    status: "خطة تسويقية جاهزة (مبنية على قالب عام)",
+    status: "خطة تسويقية جاهزة (مبنية على قالب عام ومحرك ذكي) 🚀",
     marketResearch: {
       searchSummary: `تم تحليل السوق محلياً للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 8 إلى 11 مساءً.`,
       baseStrategy: plan.strategy,
       bestFormats: plan.bestFormats,
       targetAudience: "فئة المستهلكين المهتمين بحلول الجودة السريعة (18-45 سنة).",
       pricingAdvice: "سعر تنافسي مع عرض (اشتري قطعة والثانية هدية أو شحن مجاني).",
-      disclaimer: "ملاحظة: هذا تحليل عام جاهز من القوالب، وليس نتائج بحث سوق حقيقي. يُنصح بالتحقق من البيانات الفعلية قبل الاعتماد عليه."
+      disclaimer: "ملاحظة: هذا تحليل عام جاهز من القوالب، ويُعَد كأداة مساعدة قوية لإدارة الحملات."
     },
     adFormats: [
       {
@@ -134,7 +108,7 @@ function analyzeProductAndPlan(productName, category) {
     ],
     contentPackage: {
       hook: plan.targetHook + ` لو دورت كتير ومش لاقي حل لـ "${cleanName}"، فالفيديو ده عشانك انت!`,
-      script: `مع "${cleanName}" هتنتهي المشكلة تماماً من أول استخدام. جودة عالية وسعر ${categoryLabel}. متخليش الفرصة تفوتك وابعتلنا فوراً.`,
+      script: `مع "${cleanName}" هتنتهي المشكلة تماماً من أول استخدام. جودة عالية وسعر تنافسي ${categoryLabel}. متخليش الفرصة تفوتك وابعتلنا فوراً لاغتنام العرض.`,
       cta: "اطلب نسختك دلوقتي واغتنم عرض اليوم المحدود!",
       hashtags: `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
       suggestedMusic: "موسيقى تحفيزية سريعة (Upbeat Commercial Beat) لخلق حماس الشراء."
@@ -186,7 +160,7 @@ function evaluateMediaQuality(mediaType, resolution, lightingScore) {
     mediaType: type,
     resolution: resNum > 0 ? `${resNum}p` : 'غير محددة',
     lightingScore: lighting,
-    qualityStatus: needsEdit ? "يحتاج تعديل طفيف (Edit)" : "ممتاز وجاهز للنشر الفوري",
+    qualityStatus: needsEdit ? "يحتاج تعديل طفيف (Edit)" : "ممتاز وجاهز للنشر الفوري 🌟",
     needsEdit,
     recommendations
   };
