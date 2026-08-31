@@ -1,10 +1,11 @@
 // =====================================================================
-// 🔐 auth.js - مسارات المصادقة وإدارة المستخدمين (النسخة النووية المطورة)
+// 🔐 auth.js - مسارات المصادقة وإدارة المستخدمين (النسخة النووية النهائية)
 // =====================================================================
 
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { 
   registerValidationRules, 
@@ -15,6 +16,9 @@ const { protect } = require('../middleware');
 const logger = require('../logger');
 
 const router = express.Router();
+
+// دالة مساعدة للتحقق من صحة الـ MongoDB ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // 🎟️ دالة مساعدة لإنشاء التوكن
 const generateToken = (user) => {
@@ -29,7 +33,7 @@ const generateToken = (user) => {
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' مفيدة لو الـ Frontend منفصل تماماً في الإنتاج
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 أيام
 };
 
@@ -38,12 +42,12 @@ router.post('/register', registerValidationRules, validate, async (req, res) => 
   try {
     const { name, email, password } = req.body;
     
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'هذا البريد الإلكتروني مسجّل بالفعل' });
     }
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name: name.trim(), email: email.toLowerCase().trim(), password });
     const token = generateToken(user);
     
     res.cookie('token', token, cookieOptions);
@@ -55,7 +59,7 @@ router.post('/register', registerValidationRules, validate, async (req, res) => 
       user: { id: user._id, name: user.name, email: user.email, role: user.role, plan: user.plan }
     });
   } catch (error) {
-    logger.error('❌ خطأ في التسجيل:', error.message);
+    logger.error('❌ خطأ في التسجيل:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ داخلي أثناء التسجيل' });
   }
 });
@@ -65,12 +69,12 @@ router.post('/login', loginValidationRules, validate, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
     }
 
-    user.lastLogin = Date.now();
+    user.lastLogin = new Date();
     await user.save();
 
     const token = generateToken(user);
@@ -83,7 +87,7 @@ router.post('/login', loginValidationRules, validate, async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role, plan: user.plan }
     });
   } catch (error) {
-    logger.error('❌ خطأ في تسجيل الدخول:', error.message);
+    logger.error('❌ خطأ في تسجيل الدخول:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ داخلي أثناء تسجيل الدخول' });
   }
 });
@@ -97,13 +101,17 @@ router.post('/logout', (req, res) => {
 // 4. 👤 جلب بيانات المستخدم الحالي
 router.get('/me', protect, async (req, res) => {
   try {
+    if (!isValidObjectId(req.user.id)) {
+      return res.status(400).json({ success: false, message: 'معرف المستخدم غير صالح' });
+    }
+
     const user = await User.findById(req.user.id).select('-password').lean();
     if (!user) {
       return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
     }
     res.json({ success: true, user });
   } catch (error) {
-    logger.error('❌ خطأ في جلب بيانات المستخدم:', error.message);
+    logger.error('❌ خطأ في جلب بيانات المستخدم:', { error: error.message });
     res.status(500).json({ success: false, message: 'خطأ في جلب البيانات' });
   }
 });
@@ -118,12 +126,13 @@ router.put('/update-profile', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
     }
 
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
+    if (email && email.toLowerCase().trim() !== user.email) {
+      const formattedEmail = email.toLowerCase().trim();
+      const emailExists = await User.findOne({ email: formattedEmail });
       if (emailExists) {
         return res.status(400).json({ success: false, message: 'البريد الإلكتروني مستخدم بالفعل من قبل حساب آخر' });
       }
-      user.email = email;
+      user.email = formattedEmail;
     }
 
     if (name) user.name = name.trim();
@@ -136,7 +145,7 @@ router.put('/update-profile', protect, async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role, plan: user.plan }
     });
   } catch (error) {
-    logger.error('❌ خطأ في تحديث البيانات:', error.message);
+    logger.error('❌ خطأ في تحديث البيانات:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحديث' });
   }
 });
@@ -169,7 +178,7 @@ router.put('/change-password', protect, async (req, res) => {
 
     res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
   } catch (error) {
-    logger.error('❌ خطأ في تغيير كلمة المرور:', error.message);
+    logger.error('❌ خطأ في تغيير كلمة المرور:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء تغيير كلمة المرور' });
   }
 });
@@ -178,7 +187,11 @@ router.put('/change-password', protect, async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال البريد الإلكتروني' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'لم يتم العثور على مستخدم بهذا البريد الإلكتروني' });
@@ -197,7 +210,7 @@ router.post('/forgot-password', async (req, res) => {
       resetToken // يُرسل مؤقتاً للتطوير المحلي
     });
   } catch (error) {
-    logger.error('❌ خطأ في طلب استعادة كلمة المرور:', error.message);
+    logger.error('❌ خطأ في طلب استعادة كلمة المرور:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء طلب استعادة كلمة المرور' });
   }
 });
@@ -229,7 +242,7 @@ router.put('/reset-password/:token', async (req, res) => {
 
     res.json({ success: true, message: 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن' });
   } catch (error) {
-    logger.error('❌ خطأ في إعادة تعيين كلمة المرور:', error.message);
+    logger.error('❌ خطأ في إعادة تعيين كلمة المرور:', { error: error.message });
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء إعادة تعيين كلمة المرور' });
   }
 });
