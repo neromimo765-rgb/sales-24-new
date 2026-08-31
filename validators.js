@@ -1,7 +1,9 @@
-// validators.js - نظام التحقق من البيانات
+// =====================================================================
+// 🛡️ validators.js - نظام التحقق من البيانات (النسخة النووية المحدثة)
+// =====================================================================
 const { body, validationResult } = require('express-validator');
 
-// قواعد التحقق لإنشاء حساب جديد (Register)
+// 👤 قواعد التحقق لإنشاء حساب جديد (Register)
 const registerValidationRules = [
   body('name')
     .trim()
@@ -20,7 +22,7 @@ const registerValidationRules = [
     .isLength({ min: 6 }).withMessage('كلمة المرور يجب ألا تقل عن 6 أحرف')
 ];
 
-// قواعد التحقق لتسجيل الدخول (Login)
+// 🔑 قواعد التحقق لتسجيل الدخول (Login)
 const loginValidationRules = [
   body('email')
     .trim()
@@ -32,55 +34,57 @@ const loginValidationRules = [
     .notEmpty().withMessage('كلمة المرور مطلوبة')
 ];
 
-// قواعد التحقق للتحليل التسويقي
+// 🎯 قواعد التحقق للتحليل التسويقي والحملات (محدثة لتتطابق مع الواجهة بالكامل)
 const marketingValidationRules = [
   body('productName')
     .trim()
     .notEmpty().withMessage('اسم المنتج مطلوب')
-    .isLength({ min: 2, max: 200 }).withMessage('اسم المنتج لازم يكون بين 2 و 200 حرف')
+    .isLength({ min: 2, max: 200 }).withMessage('اسم المنتج يجب أن يكون بين 2 و 200 حرف')
     .escape(),
 
   body('category')
     .optional()
-    .isIn(['default', 'electronics', 'beauty', 'home'])
+    .isIn(['default', 'electronics', 'beauty', 'home', 'fashion', 'food', 'fitness'])
     .withMessage('فئة المنتج غير صالحة'),
 
   body('lightingScore')
     .optional()
     .isInt({ min: 0, max: 10 })
-    .withMessage('تقييم الإضاءة لازم يكون بين 0 و 10')
+    .withMessage('تقييم الإضاءة يجب أن يكون بين 0 و 10')
     .toInt(),
 
   body('resolution')
     .optional()
-    .isIn(['1080p', '720p', '480p'])
+    .isIn(['1080p', '720p', '480p', '4k'])
     .withMessage('دقة الفيديو غير صالحة'),
 
   body('market')
     .optional()
     .isIn(['egypt', 'saudi'])
-    .withMessage('السوق لازم يكون مصر أو السعودية'),
+    .withMessage('السوق يجب أن يكون مصر أو السعودية'),
 
   body('dialect')
     .optional()
-    .isIn(['عامية محلية قوية', 'فصحى تسويقية مبسطة'])
-    .withMessage('اللهجة غير صالحة'),
+    .trim()
+    .escape(),
 
   body('price')
     .optional()
-    .trim()
-    .escape(),
+    .isNumeric().withMessage('سعر البيع يجب أن يكون رقماً')
+    .toFloat(),
 
-  body('currency')
+  body('cost')
+    .optional()
+    .isNumeric().withMessage('التكلفة يجب أن تكون رقماً')
+    .toFloat(),
+
+  body('uploadedFileUrl')
     .optional()
     .trim()
-    .escape(),
-
-  body('profit')
-    .optional()
+    .escape()
 ];
 
-// قواعد التحقق لتوليد السكريبت
+// ✍️ قواعد التحقق لتوليد السكريبت
 const scriptValidationRules = [
   body('productName')
     .optional()
@@ -95,13 +99,13 @@ const scriptValidationRules = [
     .escape()
 ];
 
-// دالة تنفيذ التحقق
+// 🚦 دالة تنفيذ التحقق وإرجاع الأخطاء بصيغة موحدة
 function validate(req, res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json({
       success: false,
-      message: 'بيانات غير صالحة',
+      message: 'بيانات غير صالحة، يرجى مراجعة الحقول المدخلة',
       errors: errors.array().map(err => ({
         field: err.path,
         message: err.msg
