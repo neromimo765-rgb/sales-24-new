@@ -1,5 +1,5 @@
 // =====================================================================
-// 💰 profitCalculator.js - حاسبة الأرباح والجدوى (النسخة النووية النهائية)
+// 💰 profitCalculator.js - حاسبة الأرباح والجدوى (النسخة النووية النهائية المطورة)
 // =====================================================================
 
 /**
@@ -7,7 +7,7 @@
  * @param {object|number} inputData - إما كائن يحتوي البيانات أو سعر البيع مباشرة
  * @param {number} [costPrice] - سعر التكلفة
  * @param {number} [quantity=1] - الكمية المباعة
- * @param {object} [extraCosts={}] - مصاريف إضافية مثل الشحن والإعلانات لكل قطعة
+ * @param {object|number} [extraCosts={}] - مصاريف إضافية أو الشحن
  * @param {string} [market='egypt'] - السوق المستهدف ('egypt' أو 'saudi')
  */
 function calculateProfit(inputData, costPrice, quantity = 1, extraCosts = {}, market = 'egypt') {
@@ -15,8 +15,9 @@ function calculateProfit(inputData, costPrice, quantity = 1, extraCosts = {}, ma
 
   // دعم الاستدعاء المرن (سواء ككائن متكامل من الـ Frontend أو كبراميترات منفصلة)
   if (typeof inputData === 'object' && inputData !== null) {
-    sell = parseFloat(inputData.sellingPrice);
-    cost = parseFloat(inputData.costPrice);
+    // دعم أسماء الحقول المختلفة (price أو sellingPrice) و (cost أو costPrice) لتفادي أي أخطاء مطبعية
+    sell = parseFloat(inputData.sellingPrice !== undefined ? inputData.sellingPrice : inputData.price);
+    cost = parseFloat(inputData.costPrice !== undefined ? inputData.costPrice : inputData.cost);
     qty = parseInt(inputData.quantity) || 1;
     shipping = parseFloat(inputData.shippingCost || inputData.shipping) || 0;
     ads = parseFloat(inputData.adsCostPerUnit || inputData.ads) || 0;
@@ -25,13 +26,20 @@ function calculateProfit(inputData, costPrice, quantity = 1, extraCosts = {}, ma
     sell = parseFloat(inputData);
     cost = parseFloat(costPrice);
     qty = parseInt(quantity) || 1;
-    shipping = parseFloat(extraCosts.shippingCost || extraCosts.shipping) || 0;
-    ads = parseFloat(extraCosts.adsCostPerUnit || extraCosts.ads) || 0;
+    
+    // دعم إضافي لو كانت extraCosts عبارة عن رقم مباشر أو كائن
+    if (typeof extraCosts === 'object' && extraCosts !== null) {
+      shipping = parseFloat(extraCosts.shippingCost || extraCosts.shipping) || 0;
+      ads = parseFloat(extraCosts.adsCostPerUnit || extraCosts.ads) || 0;
+    } else {
+      shipping = parseFloat(extraCosts) || 0;
+      ads = 0;
+    }
     targetMarket = market;
   }
 
   // تحديد رمز العملة واسم السوق أوتوماتيكياً
-  const isSaudi = targetMarket === 'saudi';
+  const isSaudi = targetMarket === 'saudi' || targetMarket === 'uae' || targetMarket === 'gulf';
   const currencySymbol = isSaudi ? 'ر.س' : 'ج.م';
   const marketName = isSaudi ? 'السعودية 🇸🇦' : 'مصر 🇪🇬';
 
