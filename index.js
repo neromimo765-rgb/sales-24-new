@@ -21,7 +21,7 @@ const connectDB = require('./database');
 const scriptGenerator = require('./scriptGenerator');
 const marketingEngine = require('./marketingEngine');
 const { calculateProfit } = require('./profitCalculator');
-const upload = require('./uploadConfig');
+const { upload, handleUploadErrors } = require('./uploadConfig'); // تم التحديث ليتطابق مع النسخة الآمنة لـ upload
 const Campaign = require('./models/Campaign');
 
 // Middlewares الأساسية والحماية
@@ -32,7 +32,7 @@ const {
   globalErrorHandler 
 } = require('./middleware');
 
-// Cache متطور وآمن للذاكرة
+// Cache متطور وآمن للذاكرة مع آلية تنظيف تلقائية
 const cacheStore = new Map();
 const MAX_CACHE_SIZE = 300;
 
@@ -152,8 +152,8 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
   try {
     const { productName, category, lightingScore, resolution, price, cost, market, uploadedFileUrl } = req.body;
     
-    // ضبط التحليل بناءً على السوق المستهدف (مصر أو السعودية)
-    const targetMarket = market === 'saudi' ? 'saudi' : 'egypt';
+    // ضبط التحليل بناءً على السوق المستهدف (مصر أو السعودية أو الخليج)
+    const targetMarket = ['saudi', 'uae', 'gulf'].includes(market) ? market : 'egypt';
     const marketingPlan = marketingEngine.analyzeProductAndPlan(productName, category, targetMarket);
     const mediaCheck = marketingEngine.evaluateMediaQuality('فيديو', resolution || '1080p', lightingScore || 8);
     const profitDetails = calculateProfit(price || 0, cost || 0, 1);
@@ -162,7 +162,10 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
     let campaignId = null;
     
     try {
-      const newCampaign = new Campaign({
+      // افتراض مستخدم افتراضي أو جلب المستخدم من الـ Request لو الـ auth مفعّل
+      const userId = req.user ? req.user._id : null;
+      
+      const campaignData = {
         productName,
         category,
         market: targetMarket,
@@ -176,12 +179,17 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
         mediaUrl: uploadedFileUrl || '',
         mediaType: uploadedFileUrl ? 'video' : 'none',
         qualityScore: parseInt(lightingScore) || 0
-      });
+      };
+
+      if (userId) campaignData.userId = userId;
+
+      // الحفظ إذا توفر موديل صالح أو تم ربطه بالمستخدم
+      const newCampaign = new Campaign(campaignData);
       const saved = await newCampaign.save();
       savedToDB = true;
       campaignId = saved._id;
     } catch (dbErr) {
-      logger.warn('تعذر الحفظ التلقائي في قاعدة البيانات:', { error: dbErr.message });
+      logger.warn('تعذر الحفظ التلقائي في قاعدة البيانات (وضع الأمان النشط):', { error: dbErr.message });
     }
 
     res.json({
@@ -195,8 +203,8 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
   }
 });
 
-// 📁 رفع الوسائط
-app.post('/api/upload-media', upload.single('mediaFile'), (req, res) => {
+// 📁 رفع الوسائط مع معالجة الأخطاء المحسنة من Multer
+app.post('/api/upload-media', upload.single('mediaFile'), handleUploadErrors, (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
     
@@ -234,8 +242,26 @@ app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Sales 24 Pro - Nuclear Edition v3.5 Working on Port ${PORT}`);
+  logger.info(`🚀 Sales 24 Pro يعمل بنجاح على المنفذ ${PORT}`);
+});
+
+// =====================================================================
+// 🛡️ حماية السيرفر من الـ Crashes المفاجئة (Global Error Guards)
+// =====================================================================
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('❌ خطأ غير معالج (Unhandled Rejection):', reason);
+  console.error('❌ خطأ غير معالج:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('❌ استثناء غير مصطاد (Uncaught Exception):', error);
+  console.error('❌ استثناء خطير:', error);
+  // إغلاق آمن للسيرفر في حال الاستثناءات الحرجة
+  server.close(() => {
+    process.exit(1);
+  });
 });
 
 // =====================================================================
