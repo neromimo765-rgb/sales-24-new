@@ -8,6 +8,7 @@ const logger = require('../logger');
 
 const router = express.Router();
 
+// دالة مساعدة لإنشاء التوكن
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role, name: user.name },
@@ -16,7 +17,15 @@ const generateToken = (user) => {
   );
 };
 
-// تسجيل جديد
+// إعدادات الكوكي الموحدة والأمان العالي
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 أيام
+};
+
+// 1. تسجيل جديد
 router.post('/register', registerValidationRules, validate, async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -29,7 +38,7 @@ router.post('/register', registerValidationRules, validate, async (req, res) => 
     const user = await User.create({ name, email, password });
     const token = generateToken(user);
     
-    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('token', token, cookieOptions);
     
     res.status(201).json({
       success: true,
@@ -43,7 +52,7 @@ router.post('/register', registerValidationRules, validate, async (req, res) => 
   }
 });
 
-// تسجيل الدخول
+// 2. تسجيل الدخول (تم تفعيل الـ validation هنا)
 router.post('/login', loginValidationRules, validate, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -57,7 +66,7 @@ router.post('/login', loginValidationRules, validate, async (req, res) => {
     await user.save();
 
     const token = generateToken(user);
-    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('token', token, cookieOptions);
     
     res.json({
       success: true,
@@ -71,13 +80,17 @@ router.post('/login', loginValidationRules, validate, async (req, res) => {
   }
 });
 
-// تسجيل الخروج
+// 3. تسجيل الخروج (مع مسح الكوكي بشكل صحيح)
 router.post('/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  });
   res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
 });
 
-// بيانات المستخدم الحالي (تم ربطها بـ protect بشكل آمن)
+// 4. بيانات المستخدم الحالي
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).lean();
@@ -91,7 +104,7 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// تحديث بيانات المستخدم
+// 5. تحديث بيانات المستخدم
 router.put('/update-profile', protect, async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -124,7 +137,7 @@ router.put('/update-profile', protect, async (req, res) => {
   }
 });
 
-// تغيير كلمة المرور
+// 6. تغيير كلمة المرور
 router.put('/change-password', protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -153,23 +166,25 @@ router.put('/change-password', protect, async (req, res) => {
   }
 });
 
-// طلب استعادة كلمة المرور (Forgot Password)
+// 7. طلب استعادة كلمة المرور (Forgot Password)
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
     if (!user) {
+      // لأسباب أمنية يفضل عدم الإفصاح عما إذا كان البريد موجوداً أم لا، ولكن سنبقيها واضحة بناءً على طلبك
       return res.status(404).json({ success: false, message: 'لم يتم العثور على مستخدم بهذا البريد الإلكتروني' });
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // صلاحية لمدة 10 دقائق
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 دقائق
 
     await user.save();
 
+    // ملاحظة: في الإنتاج، يجب إرسال `resetToken` عبر الإيميل وليس في الـ Response
     res.json({ 
       success: true, 
       message: 'تم إرسال تعليمات استعادة كلمة المرور بنجاح',
@@ -181,7 +196,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// إعادة تعيين كلمة المرور باستخدام الرمز (Reset Password)
+// 8. إعادة تعيين كلمة المرور باستخدام الرمز (Reset Password)
 router.put('/reset-password/:token', async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
