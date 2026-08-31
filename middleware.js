@@ -153,7 +153,7 @@ function globalErrorHandler(err, req, res, next) {
     });
   }
 
-  if, (err.code === 'LIMIT_UNEXPECTED_FILE') {
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
       message: 'نوع الملف المرسل غير مسموح به',
