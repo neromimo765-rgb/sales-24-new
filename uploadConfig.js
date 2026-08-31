@@ -1,5 +1,5 @@
 // =====================================================================
-// 📁 upload.js - إعداد رفع الملفات باحترافية وأمان مطلق (النسخة النووية النهائية)
+// 📁 uploadConfig.js - إعداد رفع الملفات باحترافية وأمان مطلق (النسخة النووية المطورة)
 // =====================================================================
 
 const multer = require('multer');
@@ -29,9 +29,11 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     try {
-      // تنظيف اسم الملف الأصلي من أي حروف خاصة أو مسافات قد تسبب مشاكل في الروابط
+      // تنظيف الامتداد والحفاظ عليه آمناً
       const safeExt = path.extname(file.originalname).toLowerCase();
-      const uniqueName = `${uuidv4()}-${Date.now()}${safeExt}`;
+      
+      // توليد اسم فريد وآمن بالكامل لمنع أي تداخل أو ثغرات أمنية
+      const uniqueName = `file-${uuidv4()}-${Date.now()}${safeExt}`;
       cb(null, uniqueName);
     } catch (error) {
       cb(error);
@@ -39,24 +41,30 @@ const storage = multer.diskStorage({
   }
 });
 
-// استخدام Set للبحث اللحظي O(1) لتسريع الفلترة والصلاِحيات
+// استخدام Set للبحث اللحظي O(1) لتسريع الفلترة والصلاحيات
 const ALLOWED_MIME_TYPES = new Set([
-  // الصور
+  // الصور (شاملة صيغ الهواتف الحديثة مثل HEIC)
   'image/jpeg', 
   'image/png', 
   'image/gif',
   'image/webp', 
   'image/svg+xml',
+  'image/heic',
+  'image/heif',
   // الفيديوهات
   'video/mp4', 
   'video/webm', 
   'video/quicktime',
   'video/x-msvideo', 
-  'video/mpeg'
+  'video/mpeg',
+  'video/m4v'
 ]);
 
 // قائمة الامتدادات المسموحة كطبقة حماية إضافية
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.mp4', '.webm', '.mov', '.avi', '.mpeg']);
+const ALLOWED_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.heic', '.heif',
+  '.mp4', '.webm', '.mov', '.avi', '.mpeg', '.m4v'
+]);
 
 // فلتر أنواع الملفات المسموحة مع حماية ضد الملفات الفارغة أو التالفة
 const fileFilter = (req, file, cb) => {
@@ -69,7 +77,7 @@ const fileFilter = (req, file, cb) => {
   if (ALLOWED_MIME_TYPES.has(file.mimetype) && ALLOWED_EXTENSIONS.has(fileExt)) {
     cb(null, true);
   } else {
-    cb(new Error(`نوع الملف أو الامتداد (${file.mimetype}) غير مسموح به. يرجى رفع صور (JPEG, PNG, GIF, WebP) أو فيديو (MP4, WebM, MOV) فقط.`), false);
+    cb(new Error(`نوع الملف أو الامتداد (${file.mimetype}) غير مسموح به. يرجى رفع صور أو فيديوهات صالحة فقط.`), false);
   }
 };
 
