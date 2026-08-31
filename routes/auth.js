@@ -90,7 +90,7 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// تحديث بيانات المستخدم (إضافة مقترحة ومفيدة)
+// تحديث بيانات المستخدم
 router.put('/update-profile', protect, async (req, res) => {
   try {
     const { name, email } = req.body;
