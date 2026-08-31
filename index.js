@@ -1,7 +1,8 @@
 // =====================================================================
-// 🚀 Sales 24 Pro - ملف التشغيل الرئيسي المتكامل والنهائي 100%
+// 🚀 Sales 24 Pro - النسخة النووية النهائية المتكاملة (تريليون في المية)
 // =====================================================================
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -34,60 +35,85 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 
 // =====================================================================
-// 🖥️ واجهة التحكم الرئيسية (Dashboard Pro)
+// 🗄️ قاعدة البيانات الذكية (MongoDB - Mongoose Schema لأرشيف الحملات)
+// =====================================================================
+const campaignSchema = new mongoose.Schema({
+  productName: { type: String, required: true },
+  category: String,
+  price: Number,
+  cost: Number,
+  profitPerUnit: Number,
+  profitMargin: String,
+  script: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
+
+// محاولة الاتصال بقاعدة البيانات (مع نظام استقرار ذاتي لا يتعطل أبداً)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/sales24';
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ تم الاتصال بقاعدة البيانات MongoDB بنجاح تام!'))
+  .catch(err => console.log('⚠️ ملاحظة: يعمل النظام بكفاءة ذاتية (لم يتم العثور على قاعدة بيانات محلية نشطة).'));
+
+// =====================================================================
+// 🖥️ واجهة التحكم الرئيسية (Dashboard Pro - النسخة النووية)
 // =====================================================================
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
     <head>
-      <title>Sales 24 - Dashboard Pro</title>
+      <title>Sales 24 - Dashboard Pro (Nuclear Edition)</title>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         * { font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box; }
         body { 
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+          color: #f8fafc;
           padding: 20px;
           min-height: 100vh;
           margin: 0;
         }
         .container {
-          max-width: 720px;
-          margin: 30px auto;
-          background: rgba(255,255,255,0.95);
+          max-width: 780px;
+          margin: 20px auto;
+          background: rgba(15, 23, 42, 0.9);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255,255,255,0.1);
           border-radius: 20px;
-          padding: 25px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          color: #333;
+          padding: 30px;
+          box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
-        h1 { color: #667eea; text-align: center; margin-top: 0; }
+        h1 { color: #38bdf8; text-align: center; margin-top: 0; font-size: 28px; }
         .status {
-          background: #f0f0f0;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid #10b981;
           padding: 12px;
           border-radius: 10px;
           text-align: center;
           margin: 15px 0;
-          color: #10b981;
+          color: #34d399;
           font-weight: bold;
         }
-        .form-group { margin-bottom: 14px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; font-size: 14px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; color: #cbd5e1; font-size: 14px; }
         input, select {
           width: 100%;
           padding: 12px;
-          border: 1px solid #ddd;
+          border: 1px solid #334155;
           border-radius: 8px;
           font-size: 15px;
-          background: #fff;
-          color: #333;
+          background: #1e293b;
+          color: #fff;
         }
+        input:focus, select:focus { border-color: #38bdf8; outline: none; }
         .row { display: flex; gap: 10px; }
         .row .form-group { flex: 1; }
         .btn {
           display: block;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
           color: white;
           padding: 14px;
           border-radius: 30px;
@@ -97,32 +123,53 @@ app.get('/', (req, res) => {
           cursor: pointer;
           font-weight: bold;
           font-size: 16px;
-          margin-top: 15px;
+          margin-top: 20px;
+          transition: 0.3s;
         }
-        .btn:hover { opacity: 0.9; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
         .result {
-          background: #1e293b;
+          background: #090d16;
+          border: 1px solid #334155;
           color: #38bdf8;
-          padding: 18px;
-          border-radius: 10px;
+          padding: 20px;
+          border-radius: 12px;
           margin-top: 20px;
           font-size: 14px;
           white-space: pre-wrap;
           display: none;
           line-height: 1.6;
+          position: relative;
+        }
+        .copy-btn {
+          background: #10b981;
+          color: white;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          float: left;
+          margin-bottom: 12px;
+          font-weight: bold;
+        }
+        .copy-btn:hover { background: #059669; }
+        .alert-box {
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid #ef4444;
+          color: #fca5a5;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          font-weight: bold;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h1>🚀 Sales 24 Pro</h1>
-        <p style="text-align:center; color:#666;">منصة إدارة التسويق والذكاء الاصطناعي الشاملة</p>
+        <h1>🚀 Sales 24 Pro - الصاروخ النووي</h1>
+        <p style="text-align:center; color:#94a3b8;">منصة ذكية متكاملة لإدارة التسويق، الأرباح، وحفظ الحملات</p>
         
-        <div class="status">✅ النظام يعمل بكفاءة أونلاين 24 ساعة</div>
-        
-        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        
-        <h3>🧠 محرك التسويق الشامل وحاسبة الأرباح وفحص الوسائط:</h3>
+        <div class="status">⚡ النظام يعمل بكفاءة تريليون في المية أونلاين</div>
         
         <div class="form-group">
           <label>اسم المنتج:</label>
@@ -170,12 +217,17 @@ app.get('/', (req, res) => {
           <input type="file" id="mediaFile" accept="image/*,video/*" />
         </div>
         
-        <button class="btn" id="analyzeBtn" onclick="runComprehensiveMarketing()">تشغيل التحليل الشامل وخطة الإعلان 🎯</button>
+        <button class="btn" id="analyzeBtn" onclick="runComprehensiveMarketing()">إطلاق التحليل الشامل وحفظ الحملة 🎯</button>
         
-        <div id="resultBox" class="result"></div>
+        <div id="resultBox" class="result">
+          <button class="copy-btn" onclick="copyScriptText()">📋 نسخ السكريبت</button>
+          <div id="resultContent" style="clear:both;"></div>
+        </div>
       </div>
 
       <script>
+        let latestScriptContent = '';
+
         async function runComprehensiveMarketing() {
           const productName = document.getElementById('productName').value.trim();
           const category = document.getElementById('productCategory').value;
@@ -185,36 +237,32 @@ app.get('/', (req, res) => {
           const cost = document.getElementById('cost').value;
           const fileInput = document.getElementById('mediaFile');
           const box = document.getElementById('resultBox');
+          const contentDiv = document.getElementById('resultContent');
           const btn = document.getElementById('analyzeBtn');
           
           if(!productName) {
-            alert('من فضلك اكتب اسم المنتج الأول يا محمد!');
+            alert('من فضلك اكتب اسم المنتج الأول يا بشمهندس محمد!');
             document.getElementById('productName').focus();
             return;
           }
           
           btn.disabled = true;
-          btn.textContent = '⏳ جاري المعالجة والتحليل...';
+          btn.textContent = '⏳ جاري تشغيل الصاروخ النووي ومعالجة البيانات...';
           box.style.display = 'block';
-          box.innerHTML = '⏳ جاري تشغيل محرك التسويق، فحص الوسائط، وحساب الأرباح عبر السيرفر...';
+          contentDiv.innerHTML = '⏳ جاري فحص الوسائط، حساب الأرباح بدقة، وحفظ الحملة...';
           
           try {
-            // لو المستخدم رفع ملف، نرفعه الأول عبر مسار الـ upload
             let uploadedFileUrl = '';
             if (fileInput.files.length > 0) {
               const formData = new FormData();
               formData.append('mediaFile', fileInput.files[0]);
-              const uploadRes = await fetch('/api/upload-media', {
-                method: 'POST',
-                body: formData
-              });
+              const uploadRes = await fetch('/api/upload-media', { method: 'POST', body: formData });
               const uploadData = await uploadRes.json();
               if (uploadData.success) {
                 uploadedFileUrl = uploadData.data.url;
               }
             }
 
-            // إرسال بيانات التحليل الشامل
             const res = await fetch('/api/comprehensive-marketing', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -226,32 +274,49 @@ app.get('/', (req, res) => {
               const p = responseData.data.marketingPlan;
               const m = responseData.data.mediaCheck;
               const profit = responseData.data.profitDetails;
+              const saved = responseData.data.savedToDB;
               
-              box.innerHTML = '✨ <b>التقرير التسويقي الشامل (Sales 24):</b>\n\n' + 
-                              '📦 <b>المنتج:</b> ' + p.product + '\n' + 
-                              '📊 <b>حالة التحليل:</b> ' + p.status + '\n' + 
-                              (profit && profit.valid ? '💰 <b>حاسبة الأرباح:</b> ربح القطعة: ' + profit.profitPerUnit + ' جنيه | هامش الربح: ' + profit.profitMargin + ' (' + profit.status + ')\n\n' : '\n') +
-                              '🔍 <b>ملخص دراسة السوق:</b>\n' + p.marketResearch.searchSummary + '\n' + 
-                              '👥 <b>الجمهور المستهدف:</b> ' + p.marketResearch.targetAudience + '\n\n' + 
-                              '🎬 <b>أفضل أشكال الإعلانات:</b>\n' + 
-                              '1️⃣ ' + p.adFormats[0].type + ' (' + p.adFormats[0].concept + ')\n' + 
-                              '2️⃣ ' + p.adFormats[1].type + ' (' + p.adFormats[1].concept + ')\n\n' + 
-                              '📝 <b>السكريبت الإعلاني المقترح:</b>\n' + p.contentPackage.script + '\n\n' + 
-                              '🎵 <b>الموسيقى المقترحة:</b> ' + p.contentPackage.suggestedMusic + '\n\n' + 
-                              '📱 <b>تقييم جودة الوسائط:</b>\n' + 
-                              '• الحالة: ' + m.qualityStatus + '\n' + 
-                              '• التوصيات: ' + m.recommendations.join(' | ') + '\n' + 
-                              (uploadedFileUrl ? '• رابط الملف المرفوع: ' + uploadedFileUrl + '\n\n' : '\n\n') +
+              latestScriptContent = p.contentPackage.script;
+
+              let alertHtml = '';
+              if (profit && profit.valid && profit.profitMargin && parseInt(profit.profitMargin) < 15) {
+                alertHtml = '<div class="alert-box">⚠️ تنبيه ذكي للأرباح: هامش الربح ضعيف (' + profit.profitMargin + ')، ننصح برفع سعر البيع قليلاً لتغطية تكاليف الإعلانات والشحن بأمان!</div>';
+              }
+
+              contentDiv.innerHTML = alertHtml +
+                              '✨ <b>التقرير التسويقي الشامل (Sales 24 Pro):</b><br><br>' + 
+                              '📦 <b>المنتج:</b> ' + p.product + '<br>' + 
+                              '📊 <b>حالة التحليل:</b> ' + p.status + '<br>' + 
+                              (saved ? '💾 <b>حالة الأرشيف:</b> تم الحفظ في قاعدة البيانات بنجاح ✅<br>' : '') +
+                              (profit && profit.valid ? '💰 <b>حاسبة الأرباح:</b> ربح القطعة: ' + profit.profitPerUnit + ' جنيه | هامش الربح: ' + profit.profitMargin + ' (' + profit.status + ')<br><br>' : '<br>') +
+                              '🔍 <b>ملخص دراسة السوق:</b><br>' + p.marketResearch.searchSummary + '<br>' + 
+                              '👥 <b>الجمهور المستهدف:</b> ' + p.marketResearch.targetAudience + '<br><br>' + 
+                              '🎬 <b>أفضل أشكال الإعلانات:</b><br>' + 
+                              '1️⃣ ' + p.adFormats[0].type + ' (' + p.adFormats[0].concept + ')<br>' + 
+                              '2️⃣ ' + p.adFormats[1].type + ' (' + p.adFormats[1].concept + ')<br><br>' + 
+                              '📝 <b>السكريبت الإعلاني المقترح:</b><br><span style="color:#e2e8f0;">' + p.contentPackage.script + '</span><br><br>' + 
+                              '🎵 <b>الموسيقى المقترحة:</b> ' + p.contentPackage.suggestedMusic + '<br><br>' + 
+                              '📱 <b>تقييم جودة الوسائط:</b><br>' + 
+                              '• الحالة: ' + m.qualityStatus + '<br>' + 
+                              '• التوصيات: ' + m.recommendations.join(' | ') + '<br>' + 
+                              (uploadedFileUrl ? '• رابط الملف المرفوع: ' + uploadedFileUrl + '<br><br>' : '<br><br>') +
                               '🏷️ <b>الهاشتاجات:</b> ' + p.contentPackage.hashtags;
             } else {
-              box.innerHTML = '❌ خطأ: ' + (responseData.message || 'بيانات غير صالحة');
+              contentDiv.innerHTML = '❌ خطأ: ' + (responseData.message || 'بيانات غير صالحة');
             }
           } catch(e) {
-            box.innerHTML = '❌ فشل الاتصال بالسيرفر، تأكد من تشغيل Node.js ومن الإنترنت.';
+            contentDiv.innerHTML = '❌ فشل الاتصال بالسيرفر، تأكد من تشغيل Node.js ومن الإنترنت.';
           } finally {
             btn.disabled = false;
-            btn.textContent = 'تشغيل التحليل الشامل وخطة الإعلان 🎯';
+            btn.textContent = 'إطلاق التحليل الشامل وحفظ الحملة 🎯';
           }
+        }
+
+        function copyScriptText() {
+          if (!latestScriptContent) return;
+          navigator.clipboard.writeText(latestScriptContent).then(() => {
+            alert('تم نسخ السكريبت بنجاح يا فنان! 📋✨');
+          });
         }
       </script>
     </body>
@@ -260,22 +325,33 @@ app.get('/', (req, res) => {
 });
 
 // =====================================================================
-// 🔌 مسارات الـ API (مؤمنة بالكامل بالـ Validators والـ Middleware)
+// 🔌 مسارات الـ API (المطورة والمؤمنة بالكامل)
 // =====================================================================
 
-// 1. مسار التحليل الشامل التسويقي + حاسبة الأرباح + فحص الوسائط
-app.post('/api/comprehensive-marketing', marketingValidationRules, validate, (req, res) => {
+app.post('/api/comprehensive-marketing', marketingValidationRules, validate, async (req, res) => {
   try {
     const { productName, category, lightingScore, resolution, price, cost } = req.body;
     
-    // استدعاء محرك التسويق
     const marketingPlan = marketingEngine.analyzeProductAndPlan(productName, category);
-    
-    // تقييم جودة الوسائط
     const mediaCheck = marketingEngine.evaluateMediaQuality('فيديو', resolution || '1080p', lightingScore || 8);
-    
-    // حساب الأرباح عبر الحاسبة الخارجية
     const profitDetails = calculateProfit(price || 0, cost || 0, 1);
+
+    let savedToDB = false;
+    try {
+      const newCampaign = new Campaign({
+        productName,
+        category,
+        price: Number(price) || 0,
+        cost: Number(cost) || 0,
+        profitPerUnit: profitDetails.valid ? profitDetails.profitPerUnit : 0,
+        profitMargin: profitDetails.valid ? profitDetails.profitMargin : '0%',
+        script: marketingPlan.contentPackage.script
+      });
+      await newCampaign.save();
+      savedToDB = true;
+    } catch (dbErr) {
+      logger.warn('تعذر الحفظ في قاعدة البيانات مؤقتاً، واستمر التحليل بنجاح', { error: dbErr.message });
+    }
 
     res.json({
       success: true,
@@ -283,7 +359,8 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, (re
       data: {
         marketingPlan,
         mediaCheck,
-        profitDetails
+        profitDetails,
+        savedToDB
       }
     });
   } catch (error) {
@@ -292,7 +369,17 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, (re
   }
 });
 
-// 2. مسار رفع الملفات (Images / Videos) عبر Multer و uploadConfig
+// مسار استعراض أرشيف الحملات السابقة
+app.get('/api/campaigns', async (req, res) => {
+  try {
+    const campaigns = await Campaign.find().sort({ createdAt: -1 }).limit(20);
+    res.json({ success: true, count: campaigns.length, data: campaigns });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'تعذر جلب أرشيف الحملات' });
+  }
+});
+
+// مسار رفع الملفات (Images / Videos) عبر Multer
 app.post('/api/upload-media', upload.single('mediaFile'), (req, res) => {
   try {
     if (!req.file) {
@@ -315,7 +402,7 @@ app.post('/api/upload-media', upload.single('mediaFile'), (req, res) => {
   }
 });
 
-// 3. مسار توليد السكريبتات الإعلانية
+// مسار توليد السكريبتات الإعلانية
 app.post('/api/generate-script', scriptValidationRules, validate, (req, res) => {
   try {
     const result = scriptGenerator.generate(req.body);
@@ -326,39 +413,26 @@ app.post('/api/generate-script', scriptValidationRules, validate, (req, res) => 
   }
 });
 
-// 4. مسار اختبار الاتصال
 app.get('/api/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Sales 24 API يعمل بكفاءة تامة 100%! 🚀',
-    requestId: req.id,
-    time: new Date()
-  });
+  res.json({ success: true, message: 'Sales 24 Pro (Nuclear Edition) يعمل بكفاءة تامة 100%! 🚀', requestId: req.id, time: new Date() });
 });
 
-// 5. مسار فحص حالة السيرفر
 app.get('/api/status', (req, res) => {
-  res.json({
-    success: true,
-    status: 'online',
-    uptime: process.uptime(),
-    requestId: req.id,
-    time: new Date()
-  });
+  res.json({ success: true, status: 'online', uptime: process.uptime(), requestId: req.id, time: new Date() });
 });
 
 // =====================================================================
-// 🛡️ معالجة الأخطاء والمسارات غير الموجودة (404 & Global Error Handler)
+// 🛡️ معالجة الأخطاء والمسارات غير الموجودة
 // =====================================================================
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
 // =====================================================================
-// ⚡ تشغيل الخادم (Server Listen)
+// ⚡ تشغيل الخادم
 // =====================================================================
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  logger.info(`🚀 Sales 24 Pro يعمل على المنفذ ${PORT}`);
-  console.log(`🚀 Sales 24 Pro يعمل بنجاح تام على المنفذ ${PORT}`);
+  logger.info(`🚀 Sales 24 Pro (Nuclear Edition) يعمل على المنفذ ${PORT}`);
+  console.log(`🚀 Sales 24 Pro (Nuclear Edition) يعمل بنجاح تام على المنفذ ${PORT}`);
   console.log(`🌐 افتح المتصفح الآن على الرابط: http://localhost:${PORT}`);
 });
