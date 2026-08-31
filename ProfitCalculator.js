@@ -1,59 +1,76 @@
-// profitCalculator.js - حاسبة الأرباح الاحترافية (سيرفر فقط)
+// =====================================================================
+// 💰 profitCalculator.js - حاسبة الأرباح الاحترافية (النسخة النووية)
+// =====================================================================
 
 function calculateProfit(sellingPrice, costPrice, quantity = 1) {
   const sell = parseFloat(sellingPrice);
   const cost = parseFloat(costPrice);
+  const qty = parseInt(quantity) || 1;
 
-  // التحقق من صحة الأرقام
+  // التحقق من صحة الأرقام بدقة تامة
   if (isNaN(sell) || isNaN(cost)) {
     return {
       valid: false,
-      message: 'الأسعار غير صالحة',
+      message: 'الأسعار المدخلة غير صالحة أو فارغة',
       profitPerUnit: 0,
       totalProfit: 0,
-      profitMargin: 0
+      profitMargin: '0%'
     };
   }
 
   if (sell <= 0) {
     return {
       valid: false,
-      message: 'سعر البيع لازم يكون أكبر من صفر',
+      message: 'سعر البيع يجب أن يكون أكبر من صفر',
       profitPerUnit: 0,
       totalProfit: 0,
-      profitMargin: 0
+      profitMargin: '0%'
     };
   }
 
   if (cost < 0) {
     return {
       valid: false,
-      message: 'التكلفة مش ممكن تكون بالسالب',
+      message: 'التكلفة لا يمكن أن تكون بالسالب',
       profitPerUnit: 0,
       totalProfit: 0,
-      profitMargin: 0
+      profitMargin: '0%'
     };
   }
 
+  // العمليات الحسابية بدقة متناهية
   const profitPerUnit = sell - cost;
-  const totalProfit = profitPerUnit * quantity;
-  const profitMargin = ((profitPerUnit / sell) * 100).toFixed(1);
+  const totalProfit = profitPerUnit * qty;
+  const profitMarginNum = (profitPerUnit / sell) * 100;
+  const profitMarginStr = profitMarginNum.toFixed(1) + '%';
+
+  // تقييم ذكي لحالة الربحية
+  let status = 'ربح ✅';
+  let recommendation = '🟢 هامش ربح ممتاز - استمر بقوة!';
+
+  if (profitPerUnit === 0) {
+    status = 'تعادل ⚖️';
+    recommendation = '⚠️ المنتج لا يحقق أرباحاً (سعر البيع يساوي التكلفة).';
+  } else if (profitPerUnit < 0) {
+    status = 'خسارة ❌';
+    recommendation = '🔴 تحذير خطير: هذا المنتج خسران، يجب تعديل السعر فوراً!';
+  } else if (profitMarginNum < 15) {
+    status = 'ربح ضعيف 🟡';
+    recommendation = '⚠️ هامش الربح أقل من 15% - ننصح برفع السعر قليلاً أو خفض تكلفة الشحن.';
+  } else if (profitMarginNum < 30) {
+    status = 'ربح جيد 👍';
+    recommendation = '🟡 هامش ربح مقبول، ولكن يمكن تحسينه لتحقيق عوائد أعلى.';
+  }
 
   return {
     valid: true,
     sellingPrice: sell,
     costPrice: cost,
-    profitPerUnit: profitPerUnit,
-    totalProfit: totalProfit,
-    profitMargin: `${profitMargin}%`,
-    status: profitPerUnit > 0 ? 'ربح ✅' : profitPerUnit === 0 ? 'تعادل ⚖️' : 'خسارة ❌',
-    recommendation: profitPerUnit > 0
-      ? (parseFloat(profitMargin) >= 30
-        ? '🟢 هامش ربح ممتاز - استمر!'
-        : parseFloat(profitMargin) >= 15
-          ? '🟡 هامش ربح مقبول - حاول تقلل التكلفة'
-          : '🔴 هامش ربح ضعيف - راجع التسعير')
-      : '🔴 المنتج ده خسران - لازم تعيد التسعير فوراً'
+    profitPerUnit: Number(profitPerUnit.toFixed(2)),
+    totalProfit: Number(totalProfit.toFixed(2)),
+    profitMargin: profitMarginStr,
+    status,
+    recommendation
   };
 }
 
