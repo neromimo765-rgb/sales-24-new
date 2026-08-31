@@ -77,7 +77,7 @@ router.post('/logout', (req, res) => {
   res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
 });
 
-// بيانات المستخدم الحالي
+// بيانات المستخدم الحالي (تم ربطها بـ protect بشكل آمن)
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).lean();
@@ -153,7 +153,7 @@ router.put('/change-password', protect, async (req, res) => {
   }
 });
 
-// 🚀 [مضاف حديثاً] طلب استعادة كلمة المرور (Forgot Password)
+// طلب استعادة كلمة المرور (Forgot Password)
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -166,14 +166,14 @@ router.post('/forgot-password', async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
     
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // صلاحية لمدّة 10 دقائق
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // صلاحية لمدة 10 دقائق
 
     await user.save();
 
     res.json({ 
       success: true, 
       message: 'تم إرسال تعليمات استعادة كلمة المرور بنجاح',
-      resetToken // للتطوير فقط، يُفضل إرساله عبر البريد الإلكتروني في الإنتاج
+      resetToken // للتطوير فقط
     });
   } catch (error) {
     logger.error('خطأ في طلب استعادة كلمة المرور:', error);
@@ -181,7 +181,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// 🚀 [مضاف حديثاً] إعادة تعيين كلمة المرور باستخدام الرمز (Reset Password)
+// إعادة تعيين كلمة المرور باستخدام الرمز (Reset Password)
 router.put('/reset-password/:token', async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
