@@ -1,14 +1,14 @@
-/**
- * إعداد رفع الملفات باحترافية - النسخة النووية الصاروخية 🚀
- * أمان مطلق، سرعة فائقة في الفلترة، وإدارة ذكية للملفات.
- */
+// =====================================================================
+// 📁 upload.js - إعداد رفع الملفات باحترافية وأمان مطلق (النسخة النووية النهائية)
+// =====================================================================
+
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-// إنشاء مجلد الرفع بخاصية الاستقرار الذاتي
-const uploadDir = path.join(__dirname, 'uploads');
+// إنشاء مجلد الرفع بخاصية الاستقرار الذاتي وتفادي الأخطاء
+const uploadDir = path.join(__dirname, '../uploads'); // تم التعديل ليصبح في جذر المشروع بمسار دقيق
 try {
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -46,12 +46,17 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/mpeg'
 ]);
 
+// قائمة الامتدادات المسموحة كطبقة حماية إضافية ضد التلاعب بالـ MimeTypes
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.mp4', '.webm', '.mov', '.avi', '.mpeg']);
+
 // فلتر أنواع الملفات المسموحة (بأقصى سرعة وأمان)
 const fileFilter = (req, file, cb) => {
-  if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+  const fileExt = path.extname(file.originalname).toLowerCase();
+  
+  if (ALLOWED_MIME_TYPES.has(file.mimetype) && ALLOWED_EXTENSIONS.has(fileExt)) {
     cb(null, true);
   } else {
-    cb(new Error(`نوع الملف (${file.mimetype}) غير مسموح به في النظام النووي. يرجى رفع صور (JPEG, PNG, GIF, WebP) أو فيديو (MP4, WebM, MOV) فقط.`), false);
+    cb(new Error(`نوع الملف أو الامتداد (${file.mimetype}) غير مسموح به. يرجى رفع صور (JPEG, PNG, GIF, WebP) أو فيديو (MP4, WebM, MOV) فقط.`), false);
   }
 };
 
@@ -65,4 +70,25 @@ const upload = multer({
   }
 });
 
-module.exports = upload;
+/**
+ * 🛡️ دالة تغليف لمعالجة أخطاء Multer وتحويلها لاستجابة JSON دقيقة
+ */
+const handleUploadErrors = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, message: 'حجم الملف يتجاوز الحد الأقصى المسموح به وهو 50 ميجابايت' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ success: false, message: 'تجاوزت الحد الأقصى لعدد الملفات المسموح بها في الطلب (5 ملفات)' });
+    }
+    return res.status(400).json({ success: false, message: `خطأ في رفع الملف: ${err.message}` });
+  } else if (err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next();
+};
+
+module.exports = {
+  upload,
+  handleUploadErrors
+};
