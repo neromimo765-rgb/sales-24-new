@@ -2,11 +2,12 @@
   "name": "sales-24-pro-nuclear",
   "version": "3.5.0",
   "description": "منصة Sales 24 الاحترافية - النسخة النووية الكاملة المدعومة بالذكاء الاصطناعي",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "lint": "echo \"No linting configured yet\""
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "lint": "echo \"No linting configured yet\"",
+    "production": "NODE_ENV=production node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
