@@ -1,5 +1,5 @@
 # =====================================================================
-# 🚀 Sales 24 Pro - Git Ignore Configuration (النسخة النووية النهائية)
+# 🚀 Sales 24 Pro - Git Ignore Configuration (النسخة النووية المطورة والنهائية)
 # =====================================================================
 
 # 📦 Dependencies (الحزم والتبعيات)
@@ -8,17 +8,17 @@ jspm_packages/
 web_modules/
 .pnp
 .pnp.js
+.yarn/install-state.gz
 
 # 🔑 Environment & Secrets (الملفات السرية والمتغيرات)
 .env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.docker
+.env.*
+!.env.example
 *.pem
 *.key
 *.cert
+secrets/
+credentials/
 
 # 📝 Logs & Debugging (السجلات وأخطاء التشغيل)
 *.log
@@ -28,16 +28,20 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+pm2.log*
 
 # 📁 User Uploads & Temp Files (ملفات الميديا والمرفوعات والمجلدات المؤقتة)
 uploads/*
 !uploads/.gitkeep
 public/uploads/*
 !public/uploads/.gitkeep
+storage/uploads/*
+!storage/uploads/.gitkeep
 temp/
 tmp/
 *.tmp
 *.temp
+downloads/
 
 # 💻 OS & System Files (ملفات النظام والتشغيل)
 .DS_Store
@@ -48,8 +52,9 @@ tmp/
 ehthumbs.db
 Thumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
-# 🛠️ IDE & Editors (ملفات بيئات التطوير)
+# 🛠️ IDE & Editors (ملفات بيئات التطوير والمحررات)
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -62,11 +67,14 @@ Desktop.ini
 *.sln
 *.sw?
 *.user
+*.code-workspace
 
 # 🧪 Testing & Coverage (تقارير الاختبارات)
 coverage/
 .nyc_output/
 .jest/
+cypress/videos/
+cypress/screenshots/
 
 # 🏗️ Production Build Output & Caching (ملفات البناء والتجميع والذاكرة المؤقتة)
 dist/
@@ -75,8 +83,22 @@ build/
 .parcel-cache/
 .turbo/
 *.tsbuildinfo
+.eslintcache
+.stylelintcache
 
-# 🌐 Deployment & Serverless Platforms (ملفات منصات النشر السحابي)
+# 🌐 Deployment & Serverless Platforms (منصات النشر السحابي والحاويات)
 .vercel/
 .netlify/
 .serverless/
+.railway/
+.render/
+Dockerfile.local
+docker-compose.override.yml
+
+# 📊 Database Local Dumps & Backups (نسخ احتياطية محلية لقواعد البيانات إن وجدت)
+*.sql
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.json
+!data/seed.json
