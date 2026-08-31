@@ -2,7 +2,7 @@
 // 🚀 Sales 24 Pro - النسخة النووية النهائية المتكاملة (تريليون في المية)
 // =====================================================================
 const express = require('express');
-const compression = require('compression'); // 🚀 أضفنا مكتبة الضغط هنا لزيادة السرعة
+const compression = require('compression'); // 🚀 تفعيل الضغط لزيادة السرعة
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestId);
 app.use(requestLogger);
 
-// إتاحة مجلد الرفع (Uploads) للملفات والصور محلياً
+// إتاحة مجلد الرفع (Uploads) للملفات والصور محلياً مع مسار مطلق آمن لـ Railway
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -376,7 +376,7 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
 // مسار استعراض أرشيف الحملات السابقة
 app.get('/api/campaigns', async (req, res) => {
   try {
-    // 🚀 أضفنا .lean() هنا لتعيين أقصى سرعة لجلب الأرشيف من قاعدة البيانات
+    // 🚀 استخدام .lean() لأقصى سرعة لجلب الأرشيف من قاعدة البيانات
     const campaigns = await Campaign.find().lean().sort({ createdAt: -1 }).limit(20);
     res.json({ success: true, count: campaigns.length, data: campaigns });
   } catch (error) {
