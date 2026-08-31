@@ -1,5 +1,5 @@
 // =====================================================================
-// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية المطورة)
+// 🎯 marketingEngine.js - محرك التسويق الذكي الشامل (النسخة النووية النهائية)
 // =====================================================================
 
 // ---------- دوال معالجة ونصوص محلية ----------
@@ -82,7 +82,7 @@ function getMarketingPlan(category) {
   return MARKET_DATABASE[key] || MARKET_DATABASE.default;
 }
 
-// ---------- التحليل والخطة (المحدثة لتشمل السوق المستهدف: مصر أو السعودية) ----------
+// ---------- التحليل والخطة (المحدثة لتشمل السوق المستهدف ومنصة الإعلانات) ----------
 
 function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', platform = 'general') {
   if (!productName || typeof productName !== 'string' || !productName.trim()) {
@@ -104,11 +104,17 @@ function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', pl
     ? `للمنتجات الفاخرة من فئة "${category}"`
     : 'لمختلف فئات المنتجات';
 
-  const platformTarget = platform === 'tiktok' 
-    ? 'مخصص لجمهور تيك توك السريع (إيقاع سريع وإبهار بصري)' 
-    : platform === 'facebook' 
-    ? 'مخصص لجمهور فيسبوك المهتم بالتفاصيل والعروض' 
-    : 'خطة تسويقية شاملة لكافة المنصات';
+  // تخصيص النص بناءً على منصة الإعلانات المختارة
+  let platformTarget = 'خطة تسويقية شاملة لكافة المنصات';
+  let platformFocusNote = 'موزع بذكاء لجميع المنصات الرقمية';
+
+  if (platform === 'tiktok') {
+    platformTarget = 'مخصص لجمهور تيك توك السريع (إيقاع سريع وإبهار بصري)';
+    platformFocusNote = 'إيقاع سريع جداً، خطاف بصري قوي في أول ثانتين، وموسيقى تريند مناسبة للتيك توك.';
+  } else if (platform === 'facebook') {
+    platformTarget = 'مخصص لجمهور فيسبوك وانستجرام المهتم بالتفاصيل والعروض';
+    platformFocusNote = 'تركيز على تفاصيل المنتج، إبراز آراء العملاء، وزر طلب واضح (CTA) مع نص دعائي جذاب.';
+  }
 
   const scriptText = isSaudi 
     ? `مع "${cleanName}" بتنتهي المشكلة نهائياً من أول استخدام. جودة عالية وتناسب ذوقك الرفيع ${categoryLabel}. لا تفوت الفرصة واطلبها الحين قبل نفاد الكمية والتوصيل لحد باب البيت!`
@@ -118,6 +124,7 @@ function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', pl
     product: cleanName,
     market: marketName,
     platform: platformTarget,
+    platformFocusNote,
     status: "خطة تسويقية ذكية جاهزة ومخصصة للسوق المستهدف 🚀",
     marketResearch: {
       searchSummary: `تم تحليل السوق في ${marketName} للمنتج "${cleanName}" - مؤشرات الطلب عالية والمنافسة متوسطة. أفضل أوقات النشر المقترحة: من 7 إلى 11 مساءً.`,
@@ -144,7 +151,7 @@ function analyzeProductAndPlan(productName, category, targetMarket = 'egypt', pl
       script: scriptText,
       cta: isSaudi ? "اطلب نسختك الحين واستفيد من عرض اليوم!" : "اطلب نسختك دلوقتي واغتنم عرض اليوم المحدود!",
       hashtags: isSaudi ? `#Sales24 #تسويق_إلكتروني #${slug} #عروض_السعودية #متجر_ترند` : `#Sales24 #تسويق_إلكتروني #${slug} #عروض_مصر #منتج_أصلي`,
-      suggestedMusic: "موسيقى تحفيزية سريعة (Upbeat Commercial Beat) لخلق حماس الشراء."
+      suggestedMusic: platform === 'tiktok' ? "موسيقى تريند سريعة وحماسية تناسب تيك توك" : "موسيقى تحفيزية هادئة وجذابة للإعلانات المموَلة"
     }
   };
 }
