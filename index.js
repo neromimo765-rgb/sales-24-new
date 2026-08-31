@@ -6,7 +6,6 @@ const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const path = require('path');
@@ -20,6 +19,7 @@ const { upload, handleUploadErrors } = require('./uploadConfig');
 
 const { 
   requestId, 
+  localRateLimiter,
   notFoundHandler, 
   globalErrorHandler 
 } = require('./middleware');
@@ -35,6 +35,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(compression({ level: 6, threshold: 1024 }));
+
+// تفعيل حماية الحد من الطلبات المحلي بدون مشاكل حزم خارجية
+app.use(localRateLimiter(120, 60 * 1000));
 
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
@@ -81,14 +84,14 @@ app.post('/api/comprehensive-marketing', (req, res) => {
     });
   } catch (error) {
     logger.error('خطأ في التحليل الشامل:', { error: error.message });
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message, requestId: req.id });
   }
 });
 
 // رفع الوسائط
 app.post('/api/upload-media', upload.single('mediaFile'), handleUploadErrors, (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف', requestId: req.id });
     
     res.json({
       success: true,
@@ -101,12 +104,12 @@ app.post('/api/upload-media', upload.single('mediaFile'), handleUploadErrors, (r
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message, requestId: req.id });
   }
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, status: 'healthy', mode: 'Local Storage Only', uptime: process.uptime() });
+  res.json({ success: true, status: 'healthy', mode: 'Local Storage Only', uptime: process.uptime(), requestId: req.id });
 });
 
 app.use(notFoundHandler);
@@ -353,7 +356,7 @@ async function runAnalysis() {
     contentDiv.innerHTML = '❌ فشل الاتصال بالسيرفر الداخلي';
     showToast('فشل الاتصال!', 'error');
   } finally {
-    btn.disabled = false;
+    btn.disabled, btn.disabled = false;
     btn.innerHTML = '🎯 إطلاق التحليل وحفظ على التليفون';
   }
 }
