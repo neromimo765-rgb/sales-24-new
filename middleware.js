@@ -1,5 +1,5 @@
 // =====================================================================
-// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النهائية المطورة)
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية النهائية المطورة)
 // =====================================================================
 
 const { v4: uuidv4 } = require('uuid');
@@ -65,7 +65,8 @@ if (cleanupIntervalId.unref) {
 
 function localRateLimiter(maxRequests = 120, windowMs = 60 * 1000) {
   return (req, res, next) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown_ip';
+    // جلب الـ IP بدقة مع دعم الـ Proxies
+    const ip = req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress || 'unknown_ip';
     const current = requestCounts.get(ip) || { count: 0, startTime: Date.now() };
 
     if (Date.now() - current.startTime > windowMs) {
@@ -109,7 +110,7 @@ function requestLogger(req, res, next) {
       url: req.originalUrl,
       status: res.statusCode,
       duration: `${duration}ms`,
-      ip: req.ip,
+      ip: req.headers['x-forwarded-for'] || req.ip,
       userAgent: req.get('User-Agent')
     });
   });
@@ -148,7 +149,7 @@ function globalErrorHandler(err, req, res, next) {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 10MB)',
+      message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 50 ميجابايت)',
       requestId: req.id || 'N/A'
     });
   }
