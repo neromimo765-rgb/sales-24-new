@@ -340,7 +340,6 @@ async function runAnalysis() {
         '📝 <b>السكريبت:</b><br>' + p.contentPackage.script + '<br><br>' + 
         '🏷️ <b>الهاشتاجات:</b> ' + p.contentPackage.hashtags;
       
-      // حفظ محلي في التليفون
       saveProjectLocally({
         productName: p.product,
         market,
@@ -356,7 +355,6 @@ async function runAnalysis() {
     contentDiv.innerHTML = '❌ فشل الاتصال بالسيرفر الداخلي';
     showToast('فشل الاتصال!', 'error');
   } finally {
-    // تم إصلاح سطر إعادة تفعيل الزر هنا لتفادي أي خطأ
     btn.disabled = false;
     btn.innerHTML = '🎯 إطلاق التحليل وحفظ على التليفون';
   }
