@@ -1,21 +1,24 @@
-// middleware.js - طبقات الحماية والمعالجة
+// =====================================================================
+// 🛡️ middleware.js - طبقات الحماية والمعالجة (النسخة النووية)
+// =====================================================================
+
 const { v4: uuidv4 } = require('uuid');
 const logger = require('./logger');
 
-// إضافة Request ID لكل طلب (للتتبع)
+// إضافة Request ID لكل طلب للتتبع الدقيق
 function requestId(req, res, next) {
   req.id = uuidv4();
   res.setHeader('X-Request-Id', req.id);
   next();
 }
 
-// تسجيل كل طلب
+// تسجيل تفاصيل كل طلب HTTP بذكاء واحترافية
 function requestLogger(req, res, next) {
   const start = Date.now();
 
   res.on('finish', () => {
     const duration = Date.now() - start;
-    logger.info('طلب HTTP', {
+    logger.info('طلب HTTP وارد', {
       requestId: req.id,
       method: req.method,
       url: req.originalUrl,
@@ -29,19 +32,19 @@ function requestLogger(req, res, next) {
   next();
 }
 
-// معالج الأخطاء العام (404)
+// معالج المسارات غير الموجودة (404)
 function notFoundHandler(req, res) {
   res.status(404).json({
     success: false,
-    message: 'المسار المطلوب غير موجود',
+    message: 'المسار المطلوب غير موجود على السيرفر ❌',
     path: req.originalUrl,
     requestId: req.id
   });
 }
 
-// معالج الأخطاء العام (500)
+// معالج الأخطاء العام والشامل (500)
 function globalErrorHandler(err, req, res, next) {
-  logger.error('خطأ غير متوقع', {
+  logger.error('حدث خطأ غير متوقع في السيرفر', {
     requestId: req.id,
     error: err.message,
     stack: err.stack,
@@ -49,37 +52,38 @@ function globalErrorHandler(err, req, res, next) {
     method: req.method
   });
 
-  // لو خطأ في JSON parsing
+  // معالجة أخطاء تحليل البيانات (JSON parsing error)
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({
       success: false,
-      message: 'البيانات المرسلة غير صالحة (JSON غير صحيح)',
+      message: 'البيانات المرسلة غير صالحة (صيغة JSON غير صحيحة)',
       requestId: req.id
     });
   }
 
-  // لو حجم الملف كبير
+  // معالجة أخطاء حجم الملفات الكبيرة
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      message: 'حجم الملف أكبر من المسموح (الحد الأقصى 50MB)',
+      message: 'حجم الملف أكبر من المسموح (الحد الأقصى المسموح به 50MB)',
       requestId: req.id
     });
   }
 
-  // لو نوع الملف مش مسموح
+  // معالجة أخطاء صيغ الملفات غير المسموحة
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
-      message: 'نوع الملف غير مسموح',
+      message: 'نوع الملف المرسل غير مسموح به',
       requestId: req.id
     });
   }
 
+  // الرد ببيانات الخطأ المناسبة بناءً على بيئة التشغيل
   res.status(err.status || 500).json({
     success: false,
     message: process.env.NODE_ENV === 'production'
-      ? 'حدث خطأ داخلي، يرجى المحاولة لاحقاً'
+      ? 'حدث خطأ داخلي في الخادم، يرجى المحاولة لاحقاً'
       : err.message,
     requestId: req.id
   });
