@@ -356,7 +356,8 @@ async function runAnalysis() {
     contentDiv.innerHTML = '❌ فشل الاتصال بالسيرفر الداخلي';
     showToast('فشل الاتصال!', 'error');
   } finally {
-    btn.disabled, btn.disabled = false;
+    // تم إصلاح سطر إعادة تفعيل الزر هنا لتفادي أي خطأ
+    btn.disabled = false;
     btn.innerHTML = '🎯 إطلاق التحليل وحفظ على التليفون';
   }
 }
