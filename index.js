@@ -1,5 +1,5 @@
 // =====================================================================
-// 🚀 Sales 24 Pro - النسخة النووية النهائية (تريليون في المية)
+// 🚀 Sales 24 Pro - النسخة النووية النهائية المطورة (تريليون في المية)
 // =====================================================================
 require('dotenv').config();
 const express = require('express');
@@ -24,14 +24,34 @@ const { calculateProfit } = require('./profitCalculator');
 const upload = require('./uploadConfig');
 const Campaign = require('./models/Campaign');
 
-// Middlewares (مع التأكد من وجود وتصدير cacheMiddleware)
+// Middlewares (مع دمج requestLoggerMiddleware القوي من ملف الـ logger)
 const { 
   requestId, 
-  requestLogger, 
-  cacheMiddleware,
   notFoundHandler, 
   globalErrorHandler 
 } = require('./middleware');
+const { requestLoggerMiddleware } = require('./logger');
+
+// Cache بسيطة وسريعة للـ Middlewares
+const cacheStore = new Map();
+function cacheMiddleware(durationInSeconds) {
+  return (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    const key = req.originalUrl || req.url;
+    const cachedResponse = cacheStore.get(key);
+    
+    if (cachedResponse && (Date.now() - cachedResponse.timestamp < durationInSeconds * 1000)) {
+      return res.send(cachedResponse.data);
+    }
+    
+    const originalSend = res.send.bind(res);
+    res.send = (body) => {
+      cacheStore.set(key, { data: body, timestamp: Date.now() });
+      originalSend(body);
+    };
+    next();
+  };
+}
 
 // Validators
 const { marketingValidationRules, scriptValidationRules, validate } = require('./validators');
@@ -44,7 +64,7 @@ const analyticsRoutes = require('./routes/analytics');
 const app = express();
 
 // =====================================================================
-// 🛡️ الأمان والحماية
+// 🛡️ الأمان والحماية المتقدمة
 // =====================================================================
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -55,11 +75,11 @@ app.use(mongoSanitize()); // منع NoSQL Injection
 app.use(xss());           // منع XSS Attacks
 app.use(hpp());           // منع HTTP Parameter Pollution
 
-// Rate Limiting (منع الهجمات)
+// Rate Limiting (منع هجمات الـ Brute Force)
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
-  message: { success: false, message: 'طلبات كثيرة جداً، حاول لاحقاً' },
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 150,
+  message: { success: false, message: 'طلبات كثيرة جداً من هذا النطاق، حاول لاحقاً.' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -68,7 +88,7 @@ app.use('/api/', limiter);
 // =====================================================================
 // ⚡ الأداء والسرعة
 // =====================================================================
-app.use(compression({ level: 6, threshold: 1024 })); // 🚀 ضغط قوي
+app.use(compression({ level: 6, threshold: 1024 })); 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -80,16 +100,18 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(requestId);
-app.use(requestLogger);
+app.use(requestLoggerMiddleware);
 
 // =====================================================================
 // 📁 الملفات الثابتة مع Cache قوي
 // =====================================================================
 const uploadsDir = path.join(__dirname, 'uploads');
+const publicDir = path.join(__dirname, 'public');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 
 app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', etag: true }));
-app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '7d', etag: true }));
+app.use('/public', express.static(publicDir, { maxAge: '7d', etag: true }));
 
 // =====================================================================
 // 🗄️ الاتصال بقاعدة البيانات
@@ -116,13 +138,13 @@ app.get('/analytics', cacheMiddleware(10), (req, res) => {
 });
 
 // =====================================================================
-// 🔌 مسارات الـ API
+// 🔌 مسارات الـ API الأساسية
 // =====================================================================
 app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// التحليل الشامل
+// 🎯 التحليل الشامل للمنتج والحملة التسويقية
 app.post('/api/comprehensive-marketing', marketingValidationRules, validate, async (req, res) => {
   try {
     const { productName, category, lightingScore, resolution, price, cost, uploadedFileUrl } = req.body;
@@ -153,7 +175,7 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
       savedToDB = true;
       campaignId = saved._id;
     } catch (dbErr) {
-      logger.warn('تعذر الحفظ في DB:', { error: dbErr.message });
+      logger.warn('تعذر الحفظ التلقائي في قاعدة البيانات:', { error: dbErr.message });
     }
 
     res.json({
@@ -162,17 +184,17 @@ app.post('/api/comprehensive-marketing', marketingValidationRules, validate, asy
       data: { marketingPlan, mediaCheck, profitDetails, savedToDB, campaignId }
     });
   } catch (error) {
-    logger.error('خطأ في التحليل:', { error: error.message });
+    logger.error('خطأ في التحليل الشامل:', { error: error.message });
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// رفع الملفات
+// 📁 رفع الوسائط
 app.post('/api/upload-media', upload.single('mediaFile'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
     
-    logger.info('تم رفع ملف', { filename: req.file.filename });
+    logger.info('تم رفع ملف بنجاح', { filename: req.file.filename, size: req.file.size });
     res.json({
       success: true,
       requestId: req.id,
@@ -184,21 +206,23 @@ app.post('/api/upload-media', upload.single('mediaFile'), (req, res) => {
       }
     });
   } catch (error) {
+    logger.error('خطأ في رفع الملف:', { error: error.message });
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// توليد السكريبت
+// ✍️ توليد السكريبت الاحترافي
 app.post('/api/generate-script', scriptValidationRules, validate, (req, res) => {
   try {
     const result = scriptGenerator.generate(req.body);
     res.json({ success: true, requestId: req.id, data: result });
   } catch (error) {
+    logger.error('خطأ في توليد السكريبت:', { error: error.message });
     res.status(500).json({ success: false, message: 'خطأ في توليد السكريبت' });
   }
 });
 
-// تصدير حملة PDF/JSON
+// 💾 تصدير بيانات حملة معينة
 app.get('/api/campaigns/:id/export', async (req, res) => {
   try {
     const campaign = await Campaign.findById(req.params.id).lean();
@@ -208,11 +232,11 @@ app.get('/api/campaigns/:id/export', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.json(campaign);
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في التصدير' });
+    res.status(500).json({ success: false, message: 'خطأ في عملية التصدير' });
   }
 });
 
-// Health Check
+// 🩺 Health Check & Monitoring Endpoints
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
@@ -228,49 +252,49 @@ app.get('/api/status', (req, res) => {
 });
 
 // =====================================================================
-// 🛡️ معالجة الأخطاء
+// 🛡️ معالجة الأخطاء (Not Found & Global Error Handler)
 // =====================================================================
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
 // =====================================================================
-// ⚡ تشغيل الخادم
+// ⚡ تشغيل الخادم (Server Initialization)
 // =====================================================================
 const PORT = process.env.PORT || 8080;
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 Sales 24 Pro يعمل على المنفذ ${PORT}`);
+  logger.info(`🚀 Sales 24 Pro يعمل بنجاح على المنفذ ${PORT}`);
   console.log(`
   ╔════════════════════════════════════════════╗
-  ║  🚀 Sales 24 Pro - Nuclear Edition v2.0  ║
+  ║  🚀 Sales 24 Pro - Nuclear Edition v2.5  ║
   ║  ⚡ Port: ${PORT}                              ║
   ║  🌐 http://localhost:${PORT}                    ║
-  ║  💎 تريليون في المية جاهز!                ║
+  ║  💎 الحالة: تريليون في المية جاهز!           ║
   ╚════════════════════════════════════════════╝
   `);
 });
 
 // Graceful Shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received - إيقاف السيرفر بأمان');
+  logger.info('SIGTERM received - إيقاف السيرفر بأمان تام');
   server.close(() => process.exit(0));
 });
 
 process.on('unhandledRejection', (err) => {
-  logger.error('Unhandled Rejection:', err);
+  logger.error('Unhandled Rejection detected:', err);
   server.close(() => process.exit(1));
 });
 
 // =====================================================================
-// 📄 HTML Templates (Frontend كامل ومحدث)
+// 📄 HTML Templates (Frontend المحسن بالكامل)
 // =====================================================================
 function getMainDashboardHTML() {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<title>Sales 24 Pro - النووي</title>
+<title>Sales 24 Pro - النسخة النووية</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="منصة ذكية لإدارة التسويق والأرباح">
+<meta name="description" content="منصة ذكية لإدارة التسويق والأرباح بكفاءة تريليونية">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
 <style>
 * { font-family: 'Segoe UI', system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
@@ -409,7 +433,7 @@ input:focus, select:focus { border-color: #38bdf8; outline: none; box-shadow: 0 
 </div>
 
 <div class="footer">
-  <p>© 2024 Sales 24 Pro - الصاروخ النووي 🚀</p>
+  <p>© 2026 Sales 24 Pro - الصاروخ النووي 🚀</p>
   <p style="margin-top:10px;"><a href="/">الرئيسية</a> | <a href="/campaigns">الحملات</a> | <a href="/analytics">الإحصائيات</a></p>
 </div>
 
@@ -487,7 +511,7 @@ async function runAnalysis() {
       const saved = responseData.data.savedToDB;
       
       latestScript = p.contentPackage.script;
-      let alertHtml = (profit?.valid && parseInt(profit.profitMargin) < 15) ? '<div class="alert-box">⚠️ هامش الربح ضعيف (' + profit.profitMargin + ')، ننصح برفع سعر البيع!</div>' : '';
+      let alertHtml = (profit?.valid && parseFloat(profit.profitMargin) < 15) ? '<div class="alert-box">⚠️ هامش الربح ضعيف (' + profit.profitMargin + ')، ننصح برفع سعر البيع!</div>' : '';
 
       latestReport = alertHtml +
         '✨ <b>التقرير التسويقي الشامل:</b><br><br>' + 
@@ -509,7 +533,7 @@ async function runAnalysis() {
       showToast('تم التحليل بنجاح! ✨');
       loadStats();
     } else {
-      contentDiv.innerHTML = '❌ ' + (responseData.message || 'خطأ');
+      contentDiv.innerHTML = '❌ ' + (responseData.message || 'خطأ غير معروف');
     }
   } catch(e) {
     contentDiv.innerHTML = '❌ فشل الاتصال بالسيرفر';
@@ -546,7 +570,7 @@ function shareResults() {
 function getLoginHTML() {
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>تسجيل الدخول</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>*{font-family:system-ui,sans-serif;box-sizing:border-box;margin:0;padding:0}body{background:linear-gradient(135deg,#0f172a,#1e1b4b);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.card{background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;max-width:400px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.5)}h1{color:#38bdf8;text-align:center;margin-bottom:25px}.form-group{margin-bottom:15px}label{display:block;margin-bottom:6px;color:#cbd5e1;font-size:14px}input{width:100%;padding:12px;border:1px solid #334155;border-radius:8px;background:#1e293b;color:#fff;font-size:15px}.btn{width:100%;padding:14px;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;border:none;border-radius:12px;font-weight:bold;cursor:pointer;margin-top:15px}.back{text-align:center;margin-top:20px}.back a{color:#38bdf8;text-decoration:none}</style></head><body>
-<div class="card"><h1>🚀 تسجيل الدخول</h1><div class="form-group"><label>البريد</label><input type="email" id="email"></div><div class="form-group"><label>كلمة السر</label><input type="password" id="pass"></div><button class="btn" onclick="login()">دخول</button><div class="back"><a href="/">← الرئيسية</a></div></div>
+<div class="card"><h1>🚀 تسجيل الدخول</h1><div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="email"></div><div class="form-group"><label>كلمة السر</label><input type="password" id="pass"></div><button class="btn" onclick="login()">دخول</button><div class="back"><a href="/">← الرئيسية</a></div></div>
 <script>async function login(){const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('pass').value})});const d=await r.json();if(d.success){localStorage.setItem('token',d.token);location.href='/';}else alert(d.message);}</script></body></html>`;
 }
 
@@ -558,5 +582,5 @@ function getCampaignsHTML() {
 
 function getAnalyticsHTML() {
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>الإحصائيات</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{background:#0f172a;color:#fff;padding:20px;font-family:system-ui}h1{color:#38bdf8;text-align:center}.back{text-align:center;margin-top:20px}.back a{color:#38bdf8}</style></head><body>
-<h1>📊 الإحصائيات</h1><div style="text-align:center;margin-top:30px;"><a href="/analytics" style="color:#38bdf8">لوحة التحليلات تعمل بكفاءة</a></div><div class="back"><a href="/">← الرئيسية</a></div></body></html>`;
+<h1>📊 الإحصائيات</h1><div style="text-align:center;margin-top:30px;"><p>لوحة التحليلات المتقدمة تعمل بكفاءة تريليونية 🚀</p></div><div class="back"><a href="/">← الرئيسية</a></div></body></html>`;
 }
